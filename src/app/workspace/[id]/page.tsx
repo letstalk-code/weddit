@@ -188,41 +188,72 @@ export default function WorkspacePage() {
   // ── Upload audio ─────────────────────────────────────────────────────────────
 
   async function handleUpload(file: File) {
+    console.log('Starting upload for file:', file.name, file.type, file.size)
     const extension = file.name.split('.').pop()?.toLowerCase() ?? 'mp3'
-    const allowed = ['mp3', 'mp4', 'wav', 'm4a']
+    const allowed = ['mp3', 'mp4', 'wav', 'm4a', 'mov']
     if (!allowed.includes(extension)) {
-      alert('Please upload an mp3, mp4, wav, or m4a file.')
+      alert(`Format .${extension} not supported. Please use mp3, mp4, wav, or m4a.`)
       return
     }
+
     setUploading(true)
     setUploadProgress(0)
+
     try {
-      // 1. Get presigned upload URL
+      console.log('Fetching presigned URL...')
       const presignRes = await fetch(`/api/projects/${id}/presign`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fileType: 'audio', contentType: file.type || 'audio/mpeg', extension }),
+        body: JSON.stringify({
+          fileType: 'audio',
+          contentType: file.type || 'audio/mpeg',
+          extension
+        }),
       })
-      if (!presignRes.ok) throw new Error('Failed to get upload URL')
-      const { url } = await presignRes.json()
 
-      // 2. Upload directly to R2 via presigned URL (using XHR for progress)
+      if (!presignRes.ok) {
+        const errData = await presignRes.json().catch(() => ({}))
+        throw new Error(errData.error || 'Failed to get upload URL')
+      }
+
+      const { url } = await presignRes.json()
+      console.log('Got presigned URL, starting XHR put...')
+
       await new Promise<void>((resolve, reject) => {
         const xhr = new XMLHttpRequest()
         xhr.upload.onprogress = (e) => {
-          if (e.lengthComputable) setUploadProgress(Math.round((e.loaded / e.total) * 100))
+          if (e.lengthComputable) {
+            const percent = Math.round((e.loaded / e.total) * 100)
+            setUploadProgress(percent)
+          }
         }
-        xhr.onload = () => (xhr.status >= 200 && xhr.status < 300 ? resolve() : reject(new Error(`Upload failed: ${xhr.status}`)))
-        xhr.onerror = () => reject(new Error('Upload failed'))
+        xhr.onload = () => {
+          console.log('XHR load status:', xhr.status)
+          if (xhr.status >= 200 && xhr.status < 300) {
+            resolve()
+          } else {
+            reject(new Error(`Upload failed with status ${xhr.status}. This might be a CORS issue on the R2 bucket.`))
+          }
+        }
+        xhr.onerror = () => {
+          console.error('XHR error during upload')
+          reject(new Error('Network error during upload. Please check your connection and R2 CORS settings.'))
+        }
         xhr.open('PUT', url)
         xhr.setRequestHeader('Content-Type', file.type || 'audio/mpeg')
         xhr.send(file)
       })
 
-      // 3. Trigger Modal worker
-      await fetch(`/api/projects/${id}/process`, { method: 'POST' })
+      console.log('Upload successful, triggering processing...')
+      const processRes = await fetch(`/api/projects/${id}/process`, { method: 'POST' })
+      if (!processRes.ok) {
+        throw new Error('Upload succeeded but failed to start processing.')
+      }
+
       setStatus('processing')
+      console.log('Status set to processing')
     } catch (err) {
+      console.error('Upload error details:', err)
       alert(`Upload failed: ${(err as Error).message}`)
     } finally {
       setUploading(false)
