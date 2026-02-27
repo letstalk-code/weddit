@@ -292,6 +292,8 @@ export default function WorkspacePage() {
   const segmentMap = new Map(segments.map((s) => [s.id, s]))
 
   const isProcessing = status === 'processing'
+  const hasTranscript = transcriptBlocks.length > 0
+  const isReadyToUpload = !isProcessing && !hasTranscript
 
   // ── Render ────────────────────────────────────────────────────────────────────
 
@@ -403,13 +405,13 @@ export default function WorkspacePage() {
             </div>
 
             <div className="flex-1 overflow-y-auto p-6 space-y-10">
-              {/* Upload zone — shown only when awaiting first upload */}
-              {status === 'created' && (
+              {/* Upload zone — shown when no transcript is present and not processing */}
+              {isReadyToUpload && (
                 <div className="mt-4">
                   <input
                     ref={fileInputRef}
                     type="file"
-                    accept=".mp3,.mp4,.wav,.m4a,audio/*,video/mp4"
+                    accept=".mp3,.mp4,.wav,.m4a,.mov,audio/*,video/mp4"
                     className="hidden"
                     onChange={(e) => { const f = e.target.files?.[0]; if (f) handleUpload(f) }}
                   />
@@ -417,17 +419,19 @@ export default function WorkspacePage() {
                     onClick={() => !uploading && fileInputRef.current?.click()}
                     onDragOver={(e) => e.preventDefault()}
                     onDrop={(e) => { e.preventDefault(); const f = e.dataTransfer.files?.[0]; if (f && !uploading) handleUpload(f) }}
-                    whileHover={{ borderColor: 'rgba(147,129,255,0.5)' }}
-                    className="border-2 border-dashed border-white/10 rounded-xl p-8 flex flex-col items-center gap-4 cursor-pointer hover:bg-[#9381ff]/5 transition-all"
+                    whileHover={{ borderColor: 'rgba(147,129,255,0.5)', backgroundColor: 'rgba(147,129,255,0.05)' }}
+                    className="border-2 border-dashed border-white/10 rounded-xl p-8 flex flex-col items-center gap-4 cursor-pointer transition-all bg-white/[0.02]"
                   >
                     {uploading ? (
                       <>
                         <Loader2 className="w-8 h-8 animate-spin text-[#9381ff]" />
                         <span className="text-sm text-brand-muted tracking-wide">Uploading… {uploadProgress}%</span>
-                        <div className="w-full bg-white/5 rounded-full h-1.5">
-                          <div
-                            className="bg-[#9381ff] h-1.5 rounded-full transition-all duration-300"
-                            style={{ width: `${uploadProgress}%` }}
+                        <div className="w-full bg-white/5 rounded-full h-1.5 overflow-hidden">
+                          <motion.div
+                            className="bg-[#9381ff] h-1.5 rounded-full"
+                            initial={{ width: 0 }}
+                            animate={{ width: `${uploadProgress}%` }}
+                            transition={{ duration: 0.3 }}
                           />
                         </div>
                       </>
@@ -437,9 +441,9 @@ export default function WorkspacePage() {
                           <Upload className="w-6 h-6 text-[#9381ff]" />
                         </div>
                         <div className="text-center">
-                          <p className="text-sm font-medium text-white/80 mb-1">Upload Audio</p>
+                          <p className="text-sm font-medium text-white/80 mb-1">Select Wedding Audio</p>
                           <p className="text-xs text-brand-muted">Drag & drop or click to browse</p>
-                          <p className="text-[10px] text-brand-muted/50 mt-2 uppercase tracking-widest">mp3 · mp4 · wav · m4a</p>
+                          <p className="text-[10px] text-brand-muted/50 mt-2 uppercase tracking-widest">mp3 • wav • m4a • mp4</p>
                         </div>
                       </>
                     )}
