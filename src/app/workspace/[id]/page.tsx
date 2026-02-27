@@ -15,6 +15,7 @@ import {
   ChevronRight,
   GripVertical,
   Loader2,
+  Upload,
 } from 'lucide-react'
 import type { Segment, Story, StoryBeat, Transcript, TranscriptWord } from '@/lib/types'
 
@@ -83,8 +84,11 @@ export default function WorkspacePage() {
   const [hoveredBeat, setHoveredBeat] = useState<string | null>(null)
   const [generating, setGenerating] = useState(false)
   const [arcDropdown, setArcDropdown] = useState<string | null>(null) // segment id whose dropdown is open
+  const [uploading, setUploading] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState(0)
 
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   // ── Fetch helpers ────────────────────────────────────────────────────────────
 
@@ -148,7 +152,7 @@ export default function WorkspacePage() {
   // ── Polling ──────────────────────────────────────────────────────────────────
 
   useEffect(() => {
-    if (status === 'processing' || status === 'created') {
+    if (status === 'processing') {
       pollRef.current = setInterval(async () => {
         const newStatus = await fetchStatus()
         if (newStatus === 'ready' || newStatus === 'error') {
@@ -178,6 +182,51 @@ export default function WorkspacePage() {
       }
     } finally {
       setGenerating(false)
+    }
+  }
+
+  // ── Upload audio ─────────────────────────────────────────────────────────────
+
+  async function handleUpload(file: File) {
+    const extension = file.name.split('.').pop()?.toLowerCase() ?? 'mp3'
+    const allowed = ['mp3', 'mp4', 'wav', 'm4a']
+    if (!allowed.includes(extension)) {
+      alert('Please upload an mp3, mp4, wav, or m4a file.')
+      return
+    }
+    setUploading(true)
+    setUploadProgress(0)
+    try {
+      // 1. Get presigned upload URL
+      const presignRes = await fetch(`/api/projects/${id}/presign`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fileType: 'audio', contentType: file.type || 'audio/mpeg', extension }),
+      })
+      if (!presignRes.ok) throw new Error('Failed to get upload URL')
+      const { url } = await presignRes.json()
+
+      // 2. Upload directly to R2 via presigned URL (using XHR for progress)
+      await new Promise<void>((resolve, reject) => {
+        const xhr = new XMLHttpRequest()
+        xhr.upload.onprogress = (e) => {
+          if (e.lengthComputable) setUploadProgress(Math.round((e.loaded / e.total) * 100))
+        }
+        xhr.onload = () => (xhr.status >= 200 && xhr.status < 300 ? resolve() : reject(new Error(`Upload failed: ${xhr.status}`)))
+        xhr.onerror = () => reject(new Error('Upload failed'))
+        xhr.open('PUT', url)
+        xhr.setRequestHeader('Content-Type', file.type || 'audio/mpeg')
+        xhr.send(file)
+      })
+
+      // 3. Trigger Modal worker
+      await fetch(`/api/projects/${id}/process`, { method: 'POST' })
+      setStatus('processing')
+    } catch (err) {
+      alert(`Upload failed: ${(err as Error).message}`)
+    } finally {
+      setUploading(false)
+      setUploadProgress(0)
     }
   }
 
@@ -211,7 +260,7 @@ export default function WorkspacePage() {
 
   const segmentMap = new Map(segments.map((s) => [s.id, s]))
 
-  const isProcessing = status === 'processing' || status === 'created'
+  const isProcessing = status === 'processing'
 
   // ── Render ────────────────────────────────────────────────────────────────────
 
@@ -323,13 +372,56 @@ export default function WorkspacePage() {
             </div>
 
             <div className="flex-1 overflow-y-auto p-6 space-y-10">
+              {/* Upload zone — shown only when awaiting first upload */}
+              {status === 'created' && (
+                <div className="mt-4">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".mp3,.mp4,.wav,.m4a,audio/*,video/mp4"
+                    className="hidden"
+                    onChange={(e) => { const f = e.target.files?.[0]; if (f) handleUpload(f) }}
+                  />
+                  <motion.div
+                    onClick={() => !uploading && fileInputRef.current?.click()}
+                    onDragOver={(e) => e.preventDefault()}
+                    onDrop={(e) => { e.preventDefault(); const f = e.dataTransfer.files?.[0]; if (f && !uploading) handleUpload(f) }}
+                    whileHover={{ borderColor: 'rgba(147,129,255,0.5)' }}
+                    className="border-2 border-dashed border-white/10 rounded-xl p-8 flex flex-col items-center gap-4 cursor-pointer hover:bg-[#9381ff]/5 transition-all"
+                  >
+                    {uploading ? (
+                      <>
+                        <Loader2 className="w-8 h-8 animate-spin text-[#9381ff]" />
+                        <span className="text-sm text-brand-muted tracking-wide">Uploading… {uploadProgress}%</span>
+                        <div className="w-full bg-white/5 rounded-full h-1.5">
+                          <div
+                            className="bg-[#9381ff] h-1.5 rounded-full transition-all duration-300"
+                            style={{ width: `${uploadProgress}%` }}
+                          />
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="w-14 h-14 rounded-full bg-[#9381ff]/10 border border-[#9381ff]/20 flex items-center justify-center">
+                          <Upload className="w-6 h-6 text-[#9381ff]" />
+                        </div>
+                        <div className="text-center">
+                          <p className="text-sm font-medium text-white/80 mb-1">Upload Audio</p>
+                          <p className="text-xs text-brand-muted">Drag & drop or click to browse</p>
+                          <p className="text-[10px] text-brand-muted/50 mt-2 uppercase tracking-widest">mp3 · mp4 · wav · m4a</p>
+                        </div>
+                      </>
+                    )}
+                  </motion.div>
+                </div>
+              )}
               {isProcessing && (
                 <div className="flex flex-col items-center justify-center h-40 gap-3 text-brand-muted">
                   <Loader2 className="w-6 h-6 animate-spin text-[#9381ff]" />
                   <span className="text-xs tracking-wider uppercase">Processing audio…</span>
                 </div>
               )}
-              {!isProcessing && transcriptBlocks.length === 0 && (
+              {!isProcessing && status !== 'created' && transcriptBlocks.length === 0 && (
                 <p className="text-brand-muted text-sm text-center mt-12">No transcript available.</p>
               )}
               {transcriptBlocks.map((block) => (
@@ -374,8 +466,11 @@ export default function WorkspacePage() {
                   <span className="text-xs tracking-wider uppercase">Analyzing moments…</span>
                 </div>
               )}
-              {!isProcessing && segments.length === 0 && (
-                <p className="text-brand-muted text-sm text-center mt-12">No segments yet. Upload audio to begin.</p>
+              {!isProcessing && status !== 'created' && segments.length === 0 && (
+                <p className="text-brand-muted text-sm text-center mt-12">No segments yet.</p>
+              )}
+              {status === 'created' && (
+                <p className="text-brand-muted text-sm text-center mt-12">Upload audio to begin.</p>
               )}
               {segments.map((seg) => {
                 const score = Math.round(seg.story_score * 100)

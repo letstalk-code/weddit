@@ -1,10 +1,10 @@
 @import "tailwindcss";
 
 @theme {
-  --color-brand-bg: #030303;
-  --color-brand-surface: #0f0f11;
-  --color-brand-border: rgba(255, 255, 255, 0.06);
-  --color-brand-border-highlight: rgba(255, 255, 255, 0.15);
+  --color-brand-bg: #08061a;
+  --color-brand-surface: #100d28;
+  --color-brand-border: rgba(255, 255, 255, 0.16);
+  --color-brand-border-highlight: rgba(255, 255, 255, 0.28);
   --color-brand-accent: #9381ff;
   --color-brand-accent-hover: #b8b0ff;
   --color-brand-peak: #e6c27a;
@@ -18,24 +18,39 @@
 body {
   background-color: var(--color-brand-bg);
   background-image:
-    radial-gradient(circle at 15% 0%, rgba(147, 129, 255, 0.06) 0%, transparent 40%),
-    radial-gradient(circle at 85% 100%, rgba(230, 194, 122, 0.04) 0%, transparent 40%),
-    radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.01) 0%, transparent 100%);
+    radial-gradient(ellipse at 10% 0%, rgba(147, 129, 255, 0.45) 0%, transparent 55%),
+    radial-gradient(ellipse at 90% 100%, rgba(230, 194, 122, 0.20) 0%, transparent 55%),
+    radial-gradient(ellipse at 60% 40%, rgba(80, 60, 180, 0.25) 0%, transparent 60%);
   color: var(--color-brand-text);
 }
 
 .glass-panel {
-  background: rgba(15, 15, 17, 0.4);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
-  border: 1px solid var(--color-brand-border);
+  background: rgba(16, 13, 40, 0.6);
+  backdrop-filter: blur(28px) saturate(180%);
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.5);
 }
 
 .glass-card {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.01) 100%);
-  backdrop-filter: blur(12px);
-  border: 1px solid var(--color-brand-border);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(20px) saturate(160%);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow:
+    0 8px 32px 0 rgba(0, 0, 0, 0.3),
+    inset 0 1px 1px 0 rgba(255, 255, 255, 0.1);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass-card:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(147, 129, 255, 0.4);
+  transform: translateY(-4px);
+  box-shadow:
+    0 20px 40px -12px rgba(0, 0, 0, 0.5),
+    0 0 20px 0 rgba(147, 129, 255, 0.15),
+    inset 0 1px 1px 0 rgba(255, 255, 255, 0.2);
 }
 
 .text-gradient {

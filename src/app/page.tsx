@@ -60,7 +60,7 @@ export default function DashboardPage() {
     fetch('/api/projects/list')
       .then((r) => r.json())
       .then((data) => setProjects(data.projects ?? []))
-      .catch(() => {});
+      .catch(() => { });
   }, []);
 
   async function handleCreate(e: React.FormEvent) {
@@ -267,7 +267,7 @@ export default function DashboardPage() {
                 <div className="flex items-center gap-2 text-[15px] text-white/60 font-medium mb-6">
                   <span className="text-[#9381ff]">★</span> Favorite Folders
                 </div>
-                <div className="flex items-center justify-between text-sm text-white/80 bg-white/[0.02] p-3 rounded-lg border border-white/[0.02] hover:bg-white/[0.04] cursor-pointer transition-colors">
+                <div className="flex items-center justify-between text-sm text-white/80 glass-card p-3 rounded-lg hover:bg-white/[0.08] cursor-pointer transition-colors">
                   <div className="flex items-center gap-3"><FolderOpen className="w-4 h-4 text-white/40" /> All Projects</div>
                   <span className="text-white/40 font-mono">0</span>
                 </div>
@@ -279,7 +279,7 @@ export default function DashboardPage() {
                 </div>
                 <div className="space-y-2 flex-1">
                   {FOLDERS.map(f => (
-                    <div key={f.id} className="flex items-center justify-between text-sm text-white/80 p-3 rounded-lg border border-transparent hover:border-white/[0.05] hover:bg-white/[0.02] cursor-pointer transition-colors">
+                    <div key={f.id} className="flex items-center justify-between text-sm text-white/80 p-3 rounded-lg border border-transparent hover:glass-card cursor-pointer transition-all">
                       <div className="flex items-center gap-3"><FolderOpen className="w-4 h-4 text-white/40" /> {f.name}</div>
                       <span className="text-white/40 font-mono">{f.count}</span>
                     </div>
@@ -302,7 +302,7 @@ export default function DashboardPage() {
                 { num: '2', title: 'Upload Audio', desc: 'Upload your wedding day audio recordings. We support MP3 format.' },
                 { num: '3', title: 'Generate & Export', desc: 'Generate a story script and export to your preferred editing software.' }
               ].map((step, i) => (
-                <div key={i} className="bg-brand-bg border border-white/[0.05] rounded-xl p-6 hover:border-white/[0.1] transition-colors cursor-pointer group">
+                <div key={i} className="glass-card rounded-xl p-6 transition-colors cursor-pointer group">
                   <div className="w-7 h-7 rounded-full bg-[#9381ff]/10 text-[#9381ff] flex items-center justify-center text-sm font-bold mb-5 border border-[#9381ff]/20 group-hover:bg-[#9381ff] group-hover:text-white transition-colors">
                     {step.num}
                   </div>

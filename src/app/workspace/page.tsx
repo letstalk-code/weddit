@@ -120,7 +120,7 @@ export default function AppWorkspace() {
                 <main className="flex flex-1 overflow-hidden relative">
 
                     {/* PANEL A: TRANSCRIPT */}
-                    <section className="w-[30%] border-r border-brand-border/40 bg-[#0a0a0c]/80 flex flex-col relative z-10 backdrop-blur-3xl">
+                    <section className="w-[30%] border-r border-brand-border/40 bg-[#0a0a0c]/40 flex flex-col relative z-10 backdrop-blur-2xl">
                         <div className="p-6 pb-4 border-b border-brand-border/40 glass-panel sticky top-0 z-20">
                             <div className="flex items-center justify-between mb-6">
                                 <h3 className="font-serif text-xl tracking-wide text-white/90">Source Script</h3>
@@ -165,7 +165,7 @@ export default function AppWorkspace() {
                     </section>
 
                     {/* PANEL B: SEGMENTS (The Raw Material) */}
-                    <section className="w-[35%] border-r border-brand-border/40 bg-[#0c0c0f]/60 flex flex-col relative z-0 backdrop-blur-xl">
+                    <section className="w-[35%] border-r border-brand-border/40 bg-[#0c0c0f]/30 flex flex-col relative z-0 backdrop-blur-xl">
                         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(147,129,255,0.02),transparent_50%)] pointer-events-none" />
 
                         <div className="p-6 pb-4 flex items-center justify-between z-10 sticky top-0 border-b border-white/[0.02]">
@@ -245,7 +245,7 @@ export default function AppWorkspace() {
                     </section>
 
                     {/* PANEL C: STORY ARC (The Masterpiece) */}
-                    <section className="w-[35%] bg-brand-bg flex flex-col relative shadow-[inset_20px_0_40px_rgba(0,0,0,0.6)]">
+                    <section className="w-[35%] bg-brand-bg/60 backdrop-blur-md flex flex-col relative shadow-[inset_20px_0_40px_rgba(0,0,0,0.6)]">
                         <div className="absolute top-0 right-0 w-[60%] h-[30%] bg-[#e6c27a]/[0.02] rounded-full blur-[100px] pointer-events-none" />
 
                         <div className="p-6 pb-4 border-b border-brand-border/40 sticky top-0 bg-[#060608]/80 backdrop-blur-md z-20">
