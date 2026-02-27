@@ -77,13 +77,14 @@ export default function WorkspacePage() {
 
   const [projectTitle, setProjectTitle] = useState('Loading…')
   const [status, setStatus] = useState<string>('created')
+  const [error, setError] = useState<string | null>(null)
   const [transcript, setTranscript] = useState<Transcript | null>(null)
   const [segments, setSegments] = useState<Segment[]>([])
   const [story, setStory] = useState<Story | null>(null)
   const [activeSegment, setActiveSegment] = useState<string | null>(null)
   const [hoveredBeat, setHoveredBeat] = useState<string | null>(null)
   const [generating, setGenerating] = useState(false)
-  const [arcDropdown, setArcDropdown] = useState<string | null>(null) // segment id whose dropdown is open
+  const [arcDropdown, setArcDropdown] = useState<string | null>(null)
   const [uploading, setUploading] = useState(false)
   const [uploadProgress, setUploadProgress] = useState(0)
 
@@ -93,57 +94,91 @@ export default function WorkspacePage() {
   // ── Fetch helpers ────────────────────────────────────────────────────────────
 
   const fetchStatus = useCallback(async () => {
-    const res = await fetch(`/api/projects/${id}/status`)
-    if (!res.ok) return
-    const data = await res.json()
-    setStatus(data.status)
-    return data.status as string
+    try {
+      const res = await fetch(`/api/projects/${id}/status`)
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        throw new Error(data.error || `Status check failed (${res.status})`)
+      }
+      const data = await res.json()
+      setStatus(data.status)
+      return data.status as string
+    } catch (err) {
+      console.error('Fetch status error:', err)
+      setError((err as Error).message)
+    }
   }, [id])
 
   const fetchSegments = useCallback(async () => {
-    const res = await fetch(`/api/projects/${id}/segments`)
-    if (!res.ok) return
-    const data: Segment[] = await res.json()
-    setSegments(data.sort((a, b) => b.story_score - a.story_score))
-    if (data.length > 0) setActiveSegment(data[0].id)
+    try {
+      const res = await fetch(`/api/projects/${id}/segments`)
+      if (!res.ok) return
+      const data: Segment[] = await res.json()
+      setSegments(data.sort((a, b) => b.story_score - a.story_score))
+      if (data.length > 0) setActiveSegment(data[0].id)
+    } catch (err) {
+      console.error('Fetch segments error:', err)
+    }
   }, [id])
 
   const fetchTranscript = useCallback(async () => {
-    const res = await fetch(`/api/projects/${id}/transcript`)
-    if (!res.ok) return
-    const data: Transcript = await res.json()
-    setTranscript(data)
+    try {
+      const res = await fetch(`/api/projects/${id}/transcript`)
+      if (!res.ok) return
+      const data: Transcript = await res.json()
+      setTranscript(data)
+    } catch (err) {
+      console.error('Fetch transcript error:', err)
+    }
   }, [id])
 
   const fetchStory = useCallback(async () => {
-    const res = await fetch(`/api/projects/${id}/story`)
-    if (!res.ok) return
-    const data: Story = await res.json()
-    setStory(data)
-  }, [id])
-
-  const fetchMeta = useCallback(async () => {
-    const res = await fetch(`/api/projects/${id}/status`)
-    if (!res.ok) return
-    const data = await res.json()
-    setStatus(data.status)
-    // title comes from meta; re-fetch meta separately
+    try {
+      const res = await fetch(`/api/projects/${id}/story`)
+      if (!res.ok) return
+      const data: Story = await res.json()
+      setStory(data)
+    } catch (err) {
+      console.error('Fetch story error:', err)
+    }
   }, [id])
 
   // ── Initial load ─────────────────────────────────────────────────────────────
 
   useEffect(() => {
-    // Fetch meta for title
+    setError(null)
+
+    // Fetch meta for status and title
     fetch(`/api/projects/${id}/status`)
-      .then((r) => r.json())
+      .then(async (r) => {
+        if (!r.ok) {
+          const data = await r.json().catch(() => ({}))
+          throw new Error(data.error || 'Server connection error')
+        }
+        return r.json()
+      })
       .then((d) => setStatus(d.status))
+      .catch((err) => {
+        setError(err.message)
+        if (err.message.includes('R2')) {
+          setError('Cloudflare R2 not configured. Please add your R2 keys to Vercel Environment Variables.')
+        }
+      })
 
     // Try to get project title from list
     fetch('/api/projects/list')
-      .then((r) => r.json())
+      .then((r) => r.ok ? r.json() : null)
       .then((d) => {
+        if (!d) return
         const found = d.projects?.find((p: { id: string; title: string }) => p.id === id)
-        if (found) setProjectTitle(found.title)
+        if (found) {
+          setProjectTitle(found.title)
+        } else {
+          setProjectTitle(`Project ${id.slice(0, 8)}`)
+        }
+      })
+      .catch(() => {
+        setProjectTitle(`Project ${id.slice(0, 8)}`)
       })
 
     Promise.all([fetchSegments(), fetchTranscript(), fetchStory()])
@@ -405,6 +440,13 @@ export default function WorkspacePage() {
             </div>
 
             <div className="flex-1 overflow-y-auto p-6 space-y-10">
+              {error && (
+                <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4 text-red-400 text-sm flex flex-col gap-2">
+                  <p className="font-semibold uppercase tracking-wider text-[10px]">Connection Error</p>
+                  <p>{error}</p>
+                </div>
+              )}
+
               {/* Upload zone — shown when no transcript is present and not processing */}
               {isReadyToUpload && (
                 <div className="mt-4">
