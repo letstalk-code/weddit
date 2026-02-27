@@ -1,0 +1,5 @@
+faster-whisper
+pyannote.audio
+boto3
+textblob
+modal
