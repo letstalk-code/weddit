@@ -79,6 +79,12 @@ export async function presignUpload(
   return getSignedUrl(client, command, { expiresIn })
 }
 
+export async function presignDownload(key: string, expiresIn = 3600): Promise<string> {
+  const { client, bucketName } = getS3Client()
+  const command = new GetObjectCommand({ Bucket: bucketName, Key: key })
+  return getSignedUrl(client, command, { expiresIn })
+}
+
 export async function getObject(key: string): Promise<Buffer> {
   const { client, bucketName } = getS3Client()
   const response = await client.send(new GetObjectCommand({ Bucket: bucketName, Key: key }))

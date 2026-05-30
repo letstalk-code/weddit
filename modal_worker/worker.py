@@ -1,47 +1,26 @@
+from __future__ import annotations
+
 import json
 import os
-import tempfile
 import time
-import uuid
-from pathlib import Path
 
 import boto3
 import modal
+import requests
 from botocore.exceptions import ClientError
 
 app = modal.App('weddit-worker')
 
+# No GPU and no ML libraries needed: Deepgram does the transcription + speaker
+# diarization in one fast hosted call. The worker just orchestrates and scores.
 image = modal.Image.debian_slim().pip_install([
-    'faster-whisper',
-    'pyannote.audio',
+    'requests',
     'boto3',
     'textblob',
     'fastapi[standard]',
 ])
 
-_whisper_model = None
-_diarization_pipeline = None
-
-
-def get_whisper_model():
-    from faster_whisper import WhisperModel
-    global _whisper_model
-    if _whisper_model is None:
-        _whisper_model = WhisperModel('base', device='cuda', compute_type='float16')
-    return _whisper_model
-
-
-def get_diarization_pipeline():
-    from pyannote.audio import Pipeline
-    global _diarization_pipeline
-    if _diarization_pipeline is None:
-        token = os.environ.get('PYANNOTE_AUTH_TOKEN')
-        if not token:
-            raise RuntimeError('PYANNOTE_AUTH_TOKEN is required for diarization')
-        _diarization_pipeline = Pipeline.from_pretrained(
-            'pyannote/speaker-diarization-3.1', use_auth_token=token
-        )
-    return _diarization_pipeline
+DEEPGRAM_URL = 'https://api.deepgram.com/v1/listen'
 
 
 def get_s3():
@@ -74,7 +53,7 @@ def load_json(s3, bucket: str, key: str) -> dict:
     return json.loads(response['Body'].read().decode('utf-8'))
 
 
-def write_json(s3, bucket: str, key: str, payload: dict) -> None:
+def write_json(s3, bucket: str, key: str, payload) -> None:
     s3.put_object(
         Bucket=bucket,
         Key=key,
@@ -107,17 +86,34 @@ def save_meta(s3, bucket: str, project_id: str, meta: dict) -> None:
 def update_meta_status(s3, bucket: str, project_id: str, status: str) -> None:
     meta = load_meta(s3, bucket, project_id)
     meta['status'] = status
+    if status in ('ready', 'error', 'created'):
+        meta.pop('stage', None)
     meta['updatedAt'] = int(time.time() * 1000)
     save_meta(s3, bucket, project_id, meta)
 
 
-def find_audio_key(s3, bucket: str, project_id: str) -> tuple[str, str]:
-    extensions = ('mp3', 'mp4', 'wav', 'm4a')
+def update_meta_stage(s3, bucket: str, project_id: str, stage: str,
+                      audio_duration_sec=None) -> None:
+    # Reports which processing step is currently running so the UI can show
+    # a progress indicator. Keeps status as 'processing'.
+    meta = load_meta(s3, bucket, project_id)
+    meta['status'] = 'processing'
+    meta['stage'] = stage
+    if 'startedAt' not in meta:
+        meta['startedAt'] = int(time.time() * 1000)
+    if audio_duration_sec is not None:
+        meta['audioDurationSec'] = round(audio_duration_sec)
+    meta['updatedAt'] = int(time.time() * 1000)
+    save_meta(s3, bucket, project_id, meta)
+
+
+def find_audio_key(s3, bucket: str, project_id: str) -> str:
+    extensions = ('mp3', 'mp4', 'wav', 'm4a', 'mov')
     for ext in extensions:
         key = f'projects/{project_id}/uploads/audio.{ext}'
         try:
             s3.head_object(Bucket=bucket, Key=key)
-            return key, ext
+            return key
         except ClientError as err:
             code = err.response.get('Error', {}).get('Code')
             if code in ('NoSuchKey', '404', 'NotFound'):
@@ -126,61 +122,64 @@ def find_audio_key(s3, bucket: str, project_id: str) -> tuple[str, str]:
     raise RuntimeError('No uploaded audio file found')
 
 
-def download_audio(s3, bucket: str, key: str, extension: str) -> Path:
-    response = s3.get_object(Bucket=bucket, Key=key)
-    with tempfile.NamedTemporaryFile(suffix=f'.{extension}', delete=False) as tmpfile:
-        tmpfile.write(response['Body'].read())
-        return Path(tmpfile.name)
-
-
-def transcribe_audio(audio_path: Path) -> list[dict]:
-    model = get_whisper_model()
-    segments, _ = model.transcribe(
-        str(audio_path), word_timestamps=True, language='en'
+def presign_get(s3, bucket: str, key: str, expires: int = 3600) -> str:
+    # Deepgram fetches the audio directly from this URL, so we never download it.
+    return s3.generate_presigned_url(
+        'get_object', Params={'Bucket': bucket, 'Key': key}, ExpiresIn=expires
     )
+
+
+def transcribe_with_deepgram(audio_url: str) -> dict:
+    api_key = os.environ.get('DEEPGRAM_API_KEY')
+    if not api_key:
+        raise RuntimeError('DEEPGRAM_API_KEY is not set')
+    params = {
+        'model': 'nova-2',
+        'diarize': 'true',
+        'punctuate': 'true',
+        'smart_format': 'true',
+        'language': 'en',
+    }
+    response = requests.post(
+        DEEPGRAM_URL,
+        params=params,
+        headers={'Authorization': f'Token {api_key}', 'Content-Type': 'application/json'},
+        json={'url': audio_url},
+        timeout=600,
+    )
+    if response.status_code != 200:
+        raise RuntimeError(f'Deepgram error {response.status_code}: {response.text[:500]}')
+    return response.json()
+
+
+def parse_deepgram_words(payload: dict) -> list:
+    channels = payload.get('results', {}).get('channels', [])
+    if not channels:
+        return []
+    alternatives = channels[0].get('alternatives', [])
+    if not alternatives:
+        return []
     words = []
-    for segment in segments:
-        for word in segment.words:
-            token = getattr(word, 'word', None) or getattr(word, 'text', '') or ''
-            confidence = getattr(word, 'probability', None)
-            if confidence is None:
-                confidence = 0.0
-            confidence = max(0.0, min(1.0, float(confidence)))
-            words.append(
-                {
-                    'start_ms': int(word.start * 1000),
-                    'end_ms': int(word.end * 1000),
-                    'word': token.strip(),
-                    'speaker': 'unknown',
-                    'confidence': confidence * 100,
-                }
-            )
+    for w in alternatives[0].get('words', []):
+        speaker_idx = w.get('speaker')
+        speaker = f'Speaker {speaker_idx}' if speaker_idx is not None else 'Speaker 0'
+        text = (w.get('punctuated_word') or w.get('word') or '').strip()
+        confidence = float(w.get('confidence', 0.0) or 0.0)
+        words.append({
+            'start_ms': int(float(w.get('start', 0)) * 1000),
+            'end_ms': int(float(w.get('end', 0)) * 1000),
+            'word': text,
+            'speaker': speaker,
+            'confidence': max(0.0, min(1.0, confidence)) * 100,
+        })
     return words
 
 
-def diarize_audio(audio_path: Path):
-    pipeline = get_diarization_pipeline()
-    return pipeline({'uri': f'project-{uuid.uuid4()}', 'audio': str(audio_path)})
+# ── Segment building + scoring (unchanged logic) ─────────────────────────────
 
-
-def align_speakers(words: list[dict], diarization) -> list[dict]:
-    aligned = []
-    for word in words:
-        mid_point = (word['start_ms'] + word['end_ms']) / 2 / 1000
-        speaker_label = 'Speaker 0'
-        for segment, _, label in diarization.itertracks(yield_label=True):
-            if segment.start <= mid_point < segment.end:
-                speaker_label = label
-                break
-        aligned_word = word.copy()
-        aligned_word['speaker'] = speaker_label
-        aligned.append(aligned_word)
-    return aligned
-
-
-def build_segments(words: list[dict]) -> list[dict]:
-    groups: list[list[dict]] = []
-    buffer: list[dict] = []
+def build_segments(words: list) -> list:
+    groups = []
+    buffer = []
     for word in words:
         if not buffer:
             buffer.append(word)
@@ -209,27 +208,24 @@ def build_segments(words: list[dict]) -> list[dict]:
             groups.append(buffer.copy())
         else:
             groups[-1].extend(buffer)
-    segments = [create_segment(group) for group in groups if group]
-    return segments
+    return [create_segment(group) for group in groups if group]
 
 
-def create_segment(words: list[dict]) -> dict:
+def create_segment(words: list) -> dict:
+    import uuid
     start_ms = words[0]['start_ms']
     end_ms = words[-1]['end_ms']
     text = ' '.join(word['word'] for word in words).strip()
     speaker = words[0]['speaker']
-    emotion_score = calculate_emotion(text, len(words))
-    story_score = calculate_story(text)
-    clarity_score = calculate_clarity(words, (end_ms - start_ms) / 1000)
     return {
         'id': uuid.uuid4().hex,
         'start_ms': start_ms,
         'end_ms': end_ms,
         'speaker': speaker,
         'text': text,
-        'emotion_score': emotion_score,
-        'story_score': story_score,
-        'clarity_score': clarity_score,
+        'emotion_score': calculate_emotion(text, len(words)),
+        'story_score': calculate_story(text),
+        'clarity_score': calculate_clarity(words, (end_ms - start_ms) / 1000),
     }
 
 
@@ -255,13 +251,13 @@ def calculate_story(text: str) -> float:
         if keyword in lower:
             score += 12
     pronouns = {'i', 'me', 'my', 'mine', 'we', 'us', 'our', 'ours'}
-    words = [word.strip(".,!?;:'\"").lower() for word in lower.split()]
-    if pronouns & set(words):
+    tokens = [word.strip(".,!?;:'\"").lower() for word in lower.split()]
+    if pronouns & set(tokens):
         score += 15
     return clamp(score)
 
 
-def calculate_clarity(words: list[dict], duration_sec: float) -> float:
+def calculate_clarity(words: list, duration_sec: float) -> float:
     fillers = {'uh', 'um', 'like'}
     normalized = [
         word['word'].strip().strip('.?!,').lower()
@@ -275,15 +271,16 @@ def calculate_clarity(words: list[dict], duration_sec: float) -> float:
         penalty += 10
     if duration_sec > 40:
         penalty += 10
-    clarity = 100 - ratio - penalty
-    return clamp(clarity)
+    return clamp(100 - ratio - penalty)
 
 
 def clamp(value: float, minimum: float = 0.0, maximum: float = 100.0) -> float:
     return max(minimum, min(maximum, value))
 
 
-@app.function(gpu='T4', timeout=600, image=image, secrets=[modal.Secret.from_name('weddit-secrets')])
+# ── Entry point ──────────────────────────────────────────────────────────────
+
+@app.function(timeout=600, image=image, secrets=[modal.Secret.from_name('weddit-secrets')])
 @modal.fastapi_endpoint(method='POST')
 def process_project(data: dict) -> dict:
     project_id = data.get('project_id')
@@ -296,26 +293,21 @@ def process_project(data: dict) -> dict:
 def _run_process_project(project_id: str) -> None:
     s3 = get_s3()
     bucket = get_bucket_name()
-    audio_path: Path | None = None
     try:
-        update_meta_status(s3, bucket, project_id, 'processing')
-        key, extension = find_audio_key(s3, bucket, project_id)
-        audio_path = download_audio(s3, bucket, key, extension)
-        words = transcribe_audio(audio_path)
-        diarization = diarize_audio(audio_path)
-        aligned_words = align_speakers(words, diarization)
-        transcript_payload = {'words': aligned_words}
-        segment_payload = build_segments(aligned_words)
-        write_json(s3, bucket, output_key(project_id, 'transcript'), transcript_payload)
-        write_json(s3, bucket, output_key(project_id, 'segments'), segment_payload)
+        update_meta_stage(s3, bucket, project_id, 'transcribing')
+        key = find_audio_key(s3, bucket, project_id)
+        audio_url = presign_get(s3, bucket, key)
+        payload = transcribe_with_deepgram(audio_url)
+        words = parse_deepgram_words(payload)
+        duration_sec = payload.get('metadata', {}).get('duration')
+        update_meta_stage(s3, bucket, project_id, 'analyzing', audio_duration_sec=duration_sec)
+        write_json(s3, bucket, output_key(project_id, 'transcript'), {'words': words})
+        write_json(s3, bucket, output_key(project_id, 'segments'), build_segments(words))
         update_meta_status(s3, bucket, project_id, 'ready')
     except Exception as exc:
         print(f'Failed to process project {project_id}:', exc)
         update_meta_status(s3, bucket, project_id, 'error')
         raise
-    finally:
-        if audio_path and audio_path.exists():
-            audio_path.unlink()
 
 
 @app.local_entrypoint()

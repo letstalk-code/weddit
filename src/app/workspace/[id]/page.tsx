@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { useParams } from 'next/navigation'
+import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Download,
@@ -16,6 +17,8 @@ import {
   GripVertical,
   Loader2,
   Upload,
+  Play,
+  Pause,
 } from 'lucide-react'
 import type { Segment, Story, StoryBeat, Transcript, TranscriptWord } from '@/lib/types'
 
@@ -62,6 +65,90 @@ function groupWordsBySpeaker(words: TranscriptWord[]): TranscriptBlock[] {
   return blocks
 }
 
+const PROCESSING_STAGES: { key: string; label: string }[] = [
+  { key: 'transcribing', label: 'Transcribing & detecting speakers' },
+  { key: 'analyzing', label: 'Finding best moments' },
+]
+
+function formatClock(totalSec: number): string {
+  const s = Math.max(0, Math.floor(totalSec))
+  const m = Math.floor(s / 60)
+  const sec = s % 60
+  return `${m}:${String(sec).padStart(2, '0')}`
+}
+
+function ProcessingProgress({
+  stage,
+  elapsedSec,
+  audioDurationSec,
+}: {
+  stage: string | null
+  elapsedSec: number | null
+  audioDurationSec: number | null
+}) {
+  const elapsedLabel = elapsedSec != null ? `${formatClock(elapsedSec)} elapsed` : null
+  const audioLabel =
+    audioDurationSec != null ? `${formatClock(audioDurationSec)} of audio` : null
+
+  const foundIdx = PROCESSING_STAGES.findIndex((s) => s.key === stage)
+  // No stage reported yet (job just started, or started before stage tracking) —
+  // show an indeterminate spinner rather than a misleading step.
+  if (foundIdx === -1) {
+    return (
+      <div className="flex flex-col items-center justify-center h-40 gap-3 text-brand-muted">
+        <Loader2 className="w-6 h-6 animate-spin text-[#9381ff]" />
+        <span className="text-xs tracking-wider uppercase">Processing audio…</span>
+        {elapsedLabel && <span className="text-[11px] text-brand-muted/70 font-mono">{elapsedLabel}</span>}
+      </div>
+    )
+  }
+  const idx = foundIdx
+  const current = PROCESSING_STAGES[idx]
+  const pct = Math.round(((idx + 1) / PROCESSING_STAGES.length) * 100)
+  return (
+    <div className="flex flex-col gap-5 py-4">
+      <div className="flex items-center gap-3">
+        <Loader2 className="w-5 h-5 animate-spin text-[#9381ff] shrink-0" />
+        <div className="flex flex-col">
+          <span className="text-sm text-white/85">{current.label}…</span>
+          <span className="text-[11px] text-brand-muted">
+            Step {idx + 1} of {PROCESSING_STAGES.length}
+          </span>
+        </div>
+      </div>
+
+      {/* Elapsed time + audio length */}
+      <div className="flex items-center gap-2 text-[11px] font-mono text-brand-muted/80">
+        {elapsedLabel && <span className="text-white/60">{elapsedLabel}</span>}
+        {elapsedLabel && audioLabel && <span className="text-brand-muted/40">·</span>}
+        {audioLabel && <span>{audioLabel}</span>}
+      </div>
+      <div className="w-full bg-white/5 rounded-full h-1.5 overflow-hidden">
+        <motion.div
+          className="bg-[#9381ff] h-1.5 rounded-full"
+          initial={{ width: 0 }}
+          animate={{ width: `${pct}%` }}
+          transition={{ duration: 0.5 }}
+        />
+      </div>
+      <ol className="flex flex-col gap-2.5">
+        {PROCESSING_STAGES.map((s, i) => (
+          <li key={s.key} className="flex items-center gap-2.5 text-[12px]">
+            {i < idx ? (
+              <CheckCircle2 className="w-3.5 h-3.5 text-[#6fdfb8] shrink-0" />
+            ) : i === idx ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin text-[#9381ff] shrink-0" />
+            ) : (
+              <div className="w-3.5 h-3.5 rounded-full border border-white/15 shrink-0" />
+            )}
+            <span className={i <= idx ? 'text-white/70' : 'text-brand-muted/50'}>{s.label}</span>
+          </li>
+        ))}
+      </ol>
+    </div>
+  )
+}
+
 const SPEAKER_COLORS = ['text-[#e6c27a]', 'text-[#9381ff]', 'text-[#6fdfb8]', 'text-[#f08080]']
 
 function speakerColor(speaker: string, allSpeakers: string[]): string {
@@ -77,6 +164,10 @@ export default function WorkspacePage() {
 
   const [projectTitle, setProjectTitle] = useState('Loading…')
   const [status, setStatus] = useState<string>('created')
+  const [stage, setStage] = useState<string | null>(null)
+  const [startedAt, setStartedAt] = useState<number | null>(null)
+  const [audioDuration, setAudioDuration] = useState<number | null>(null)
+  const [nowTick, setNowTick] = useState<number>(() => Date.now())
   const [error, setError] = useState<string | null>(null)
   const [transcript, setTranscript] = useState<Transcript | null>(null)
   const [segments, setSegments] = useState<Segment[]>([])
@@ -84,12 +175,18 @@ export default function WorkspacePage() {
   const [activeSegment, setActiveSegment] = useState<string | null>(null)
   const [hoveredBeat, setHoveredBeat] = useState<string | null>(null)
   const [generating, setGenerating] = useState(false)
+  const [targetMinutes, setTargetMinutes] = useState(5)
+  const [storyStyle, setStoryStyle] = useState<'video' | 'balanced' | 'story'>('balanced')
   const [arcDropdown, setArcDropdown] = useState<string | null>(null)
   const [uploading, setUploading] = useState(false)
   const [uploadProgress, setUploadProgress] = useState(0)
+  const [audioUrl, setAudioUrl] = useState<string | null>(null)
+  const [playingSegId, setPlayingSegId] = useState<string | null>(null)
 
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const audioRef = useRef<HTMLAudioElement>(null)
+  const playbackRef = useRef<{ queue: Segment[]; index: number } | null>(null)
 
   // ── Fetch helpers ────────────────────────────────────────────────────────────
 
@@ -102,6 +199,9 @@ export default function WorkspacePage() {
       }
       const data = await res.json()
       setStatus(data.status)
+      setStage(data.stage ?? null)
+      setStartedAt(data.startedAt ?? null)
+      setAudioDuration(data.audioDurationSec ?? null)
       return data.status as string
     } catch (err) {
       console.error('Fetch status error:', err)
@@ -157,7 +257,12 @@ export default function WorkspacePage() {
         }
         return r.json()
       })
-      .then((d) => setStatus(d.status))
+      .then((d) => {
+        setStatus(d.status)
+        setStage(d.stage ?? null)
+        setStartedAt(d.startedAt ?? null)
+        setAudioDuration(d.audioDurationSec ?? null)
+      })
       .catch((err) => {
         setError(err.message)
         if (err.message.includes('R2')) {
@@ -205,12 +310,38 @@ export default function WorkspacePage() {
     }
   }, [status, fetchStatus, fetchSegments, fetchTranscript, fetchStory])
 
+  // ── Elapsed timer tick (only while processing) ────────────────────────────────
+
+  useEffect(() => {
+    if (status !== 'processing') return
+    setNowTick(Date.now())
+    const t = setInterval(() => setNowTick(Date.now()), 1000)
+    return () => clearInterval(t)
+  }, [status])
+
+  // ── Fetch a streaming URL for the audio once results exist ────────────────────
+
+  useEffect(() => {
+    if (status !== 'ready' && segments.length === 0) return
+    if (audioUrl) return
+    let cancelled = false
+    fetch(`/api/projects/${id}/audio`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => { if (!cancelled && d?.url) setAudioUrl(d.url) })
+      .catch(() => {})
+    return () => { cancelled = true }
+  }, [id, status, segments.length, audioUrl])
+
   // ── Generate story ───────────────────────────────────────────────────────────
 
   async function handleGenerateStory() {
     setGenerating(true)
     try {
-      const res = await fetch(`/api/projects/${id}/story`, { method: 'POST' })
+      const res = await fetch(`/api/projects/${id}/story`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ targetMinutes, style: storyStyle }),
+      })
       if (res.ok) {
         const data: Story = await res.json()
         setStory(data)
@@ -286,6 +417,9 @@ export default function WorkspacePage() {
       }
 
       setStatus('processing')
+      setStage('transcribing')
+      setStartedAt(Date.now())
+      setAudioDuration(null)
       console.log('Status set to processing')
     } catch (err) {
       console.error('Upload error details:', err)
@@ -326,9 +460,68 @@ export default function WorkspacePage() {
 
   const segmentMap = new Map(segments.map((s) => [s.id, s]))
 
+  const assignedSegs = (story
+    ? story.beats.flatMap((b) => b.segment_ids).map((sid) => segmentMap.get(sid)).filter(Boolean)
+    : []) as Segment[]
+  const assembledSec = assignedSegs.reduce((a, s) => a + (s.end_ms - s.start_ms) / 1000, 0)
+
   const isProcessing = status === 'processing'
   const hasTranscript = transcriptBlocks.length > 0
   const isReadyToUpload = !isProcessing && !hasTranscript
+
+  // ── Audio playback ────────────────────────────────────────────────────────────
+
+  const isPlaying = playingSegId !== null
+  const storyHasSegments = !!story?.beats.some((b) => b.segment_ids.length > 0)
+
+  function stopPlayback() {
+    playbackRef.current = null
+    setPlayingSegId(null)
+    audioRef.current?.pause()
+  }
+  function startCurrentSegment() {
+    const a = audioRef.current
+    const pb = playbackRef.current
+    if (!a || !pb) return
+    if (pb.index >= pb.queue.length) { stopPlayback(); return }
+    const seg = pb.queue[pb.index]
+    try { a.currentTime = seg.start_ms / 1000 } catch { /* not seekable yet */ }
+    setPlayingSegId(seg.id)
+    void a.play().catch(() => {})
+  }
+  function playSegments(segs: Segment[]) {
+    if (!audioUrl || segs.length === 0) return
+    playbackRef.current = { queue: segs, index: 0 }
+    startCurrentSegment()
+  }
+  function toggleSegment(seg: Segment) {
+    if (playingSegId === seg.id) stopPlayback()
+    else playSegments([seg])
+  }
+  function handleTimeUpdate() {
+    const a = audioRef.current
+    const pb = playbackRef.current
+    if (!a || !pb) return
+    const seg = pb.queue[pb.index]
+    if (!seg) return
+    // Stop at the end of the current moment, then advance to the next (if any).
+    if (a.currentTime * 1000 >= seg.end_ms) {
+      pb.index += 1
+      if (pb.index >= pb.queue.length) stopPlayback()
+      else startCurrentSegment()
+    }
+  }
+  function playStory() {
+    const order: Segment[] = []
+    for (const beatName of ['Hook', 'Build', 'Peak', 'Resolve'] as const) {
+      const beat = story?.beats.find((b) => b.name === beatName)
+      for (const sid of beat?.segment_ids ?? []) {
+        const s = segmentMap.get(sid)
+        if (s) order.push(s)
+      }
+    }
+    playSegments(order)
+  }
 
   // ── Render ────────────────────────────────────────────────────────────────────
 
@@ -341,17 +534,28 @@ export default function WorkspacePage() {
         <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-[#e6c27a]/5 rounded-full blur-[120px]" />
       </div>
 
+      {/* Hidden audio element used for moment previews + Play Story */}
+      <audio
+        ref={audioRef}
+        src={audioUrl ?? undefined}
+        onTimeUpdate={handleTimeUpdate}
+        onEnded={stopPlayback}
+        preload="none"
+      />
+
       {/* SIDEBAR */}
       <nav className="w-[68px] glass-panel border-r-0 border-brand-border/50 flex flex-col items-center py-6 gap-8 z-20 shrink-0 shadow-2xl relative">
         <div className="absolute inset-y-0 right-0 w-px bg-gradient-to-b from-transparent via-brand-border to-transparent opacity-50" />
-        <motion.div
-          whileHover={{ scale: 1.05, filter: 'brightness(1.15)' }}
-          className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#9381ff] to-[#6a56cc] flex items-center justify-center shadow-[0_0_20px_rgba(147,129,255,0.3)] cursor-pointer relative group overflow-hidden"
-        >
-          <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-[#e6c27a]/20 to-transparent pointer-events-none" />
-          <div className="absolute inset-0 rounded-xl ring-1 ring-white/20 group-hover:ring-white/40 transition-all pointer-events-none" />
-          <span className="font-serif font-bold text-[17px] text-transparent bg-clip-text bg-gradient-to-b from-[#fffaeb] to-[#e0c890] relative z-10 tracking-tight">W</span>
-        </motion.div>
+        <Link href="/" aria-label="Back to dashboard" title="Back to dashboard">
+          <motion.div
+            whileHover={{ scale: 1.05, filter: 'brightness(1.15)' }}
+            className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#9381ff] to-[#6a56cc] flex items-center justify-center shadow-[0_0_20px_rgba(147,129,255,0.3)] cursor-pointer relative group overflow-hidden"
+          >
+            <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-[#e6c27a]/20 to-transparent pointer-events-none" />
+            <div className="absolute inset-0 rounded-xl ring-1 ring-white/20 group-hover:ring-white/40 transition-all pointer-events-none" />
+            <span className="font-serif font-bold text-[17px] text-transparent bg-clip-text bg-gradient-to-b from-[#fffaeb] to-[#e0c890] relative z-10 tracking-tight">W</span>
+          </motion.div>
+        </Link>
         <div className="flex flex-col gap-8 mt-6">
           <SidebarIcon icon={<FileText />} tooltip="Transcript" />
           <SidebarIcon icon={<ListVideo />} active tooltip="Story" />
@@ -382,6 +586,45 @@ export default function WorkspacePage() {
           </div>
 
           <div className="flex items-center gap-3">
+            {/* Highlight style */}
+            <div className="flex items-center gap-1.5 pr-2 border-r border-brand-border/40 mr-1">
+              <span className="text-[10px] uppercase tracking-wider text-brand-muted/80">Style</span>
+              <div className="flex rounded-md overflow-hidden border border-brand-border/60">
+                {([['video', 'Video'], ['balanced', 'Balanced'], ['story', 'Story']] as const).map(([key, label]) => (
+                  <button
+                    key={key}
+                    onClick={() => setStoryStyle(key)}
+                    disabled={generating}
+                    title={
+                      key === 'video' ? 'Fewer, punchiest emotional moments — leave room for visuals'
+                        : key === 'story' ? 'More spoken moments — let the words carry the story'
+                          : 'A balanced mix'
+                    }
+                    className={`px-2.5 py-1 text-[11px] font-medium transition-colors disabled:opacity-40 ${storyStyle === key ? 'bg-[#9381ff]/25 text-[#b8b0ff]' : 'text-brand-muted hover:text-white/80 hover:bg-white/5'}`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Highlight length slider */}
+            <div className="flex items-center gap-2 pr-2 border-r border-brand-border/40 mr-1">
+              <span className="text-[10px] uppercase tracking-wider text-brand-muted/80">Length</span>
+              <input
+                type="range"
+                min={1}
+                max={10}
+                step={1}
+                value={targetMinutes}
+                onChange={(e) => setTargetMinutes(Number(e.target.value))}
+                disabled={generating}
+                title={`Target highlight length: ${targetMinutes} min`}
+                className="w-24 accent-[#9381ff] cursor-pointer disabled:opacity-40"
+              />
+              <span className="text-xs font-mono text-white/70 w-12 tabular-nums">{targetMinutes} min</span>
+            </div>
+
             {/* Generate Story button */}
             <motion.button
               whileHover={{ scale: 1.02 }}
@@ -493,10 +736,11 @@ export default function WorkspacePage() {
                 </div>
               )}
               {isProcessing && (
-                <div className="flex flex-col items-center justify-center h-40 gap-3 text-brand-muted">
-                  <Loader2 className="w-6 h-6 animate-spin text-[#9381ff]" />
-                  <span className="text-xs tracking-wider uppercase">Processing audio…</span>
-                </div>
+                <ProcessingProgress
+                  stage={stage}
+                  elapsedSec={startedAt ? Math.max(0, Math.floor((nowTick - startedAt) / 1000)) : null}
+                  audioDurationSec={audioDuration}
+                />
               )}
               {!isProcessing && status !== 'created' && transcriptBlocks.length === 0 && (
                 <p className="text-brand-muted text-sm text-center mt-12">No transcript available.</p>
@@ -599,7 +843,15 @@ export default function WorkspacePage() {
                     </p>
 
                     <div className="flex items-center justify-between mt-auto relative z-10">
-                      <div className="flex gap-2">
+                      <div className="flex gap-2 items-center">
+                        <button
+                          onClick={(e) => { e.stopPropagation(); toggleSegment(seg) }}
+                          disabled={!audioUrl}
+                          title={audioUrl ? 'Preview this moment' : 'Audio unavailable'}
+                          className="w-7 h-7 rounded-full flex items-center justify-center border border-[#9381ff]/30 bg-[#9381ff]/10 text-[#9381ff] hover:bg-[#9381ff]/20 transition-all disabled:opacity-30 disabled:cursor-not-allowed shrink-0"
+                        >
+                          {playingSegId === seg.id ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5 ml-0.5" />}
+                        </button>
                         <Badge text={`${Math.round((seg.end_ms - seg.start_ms) / 1000)}s`} />
                         <Badge text={msToTimecode(seg.start_ms)} />
                       </div>
@@ -652,8 +904,24 @@ export default function WorkspacePage() {
           <section className="w-[35%] bg-brand-bg flex flex-col relative shadow-[inset_20px_0_40px_rgba(0,0,0,0.6)]">
             <div className="absolute top-0 right-0 w-[60%] h-[30%] bg-[#e6c27a]/[0.02] rounded-full blur-[100px] pointer-events-none" />
 
-            <div className="p-6 pb-4 border-b border-brand-border/40 sticky top-0 bg-[#060608]/80 backdrop-blur-md z-20">
-              <h3 className="font-serif text-xl tracking-wide text-white/90">Narrative Arc</h3>
+            <div className="p-6 pb-4 border-b border-brand-border/40 sticky top-0 bg-[#060608]/80 backdrop-blur-md z-20 flex items-center justify-between">
+              <div>
+                <h3 className="font-serif text-xl tracking-wide text-white/90">Narrative Arc</h3>
+                {assignedSegs.length > 0 && (
+                  <span className="text-[11px] text-brand-muted font-mono">
+                    ~{(assembledSec / 60).toFixed(1)} min · {assignedSegs.length} moments
+                  </span>
+                )}
+              </div>
+              <button
+                onClick={() => (isPlaying ? stopPlayback() : playStory())}
+                disabled={!audioUrl || !storyHasSegments}
+                title={!storyHasSegments ? 'Generate a story first' : !audioUrl ? 'Audio unavailable' : 'Play the arranged story'}
+                className="flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all border border-[#9381ff]/30 bg-[#9381ff]/10 text-[#b8b0ff] hover:bg-[#9381ff]/20 disabled:opacity-30 disabled:cursor-not-allowed"
+              >
+                {isPlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
+                {isPlaying ? 'Stop' : 'Play Story'}
+              </button>
             </div>
 
             <div className="flex-1 overflow-y-auto px-8 py-10">
@@ -708,6 +976,14 @@ export default function WorkspacePage() {
                                     <span className={`text-[10px] uppercase tracking-wider font-mono ${isPeak ? 'text-[#e6c27a]/60' : ''}`}>
                                       {seg.speaker}
                                     </span>
+                                    <button
+                                      onClick={(e) => { e.stopPropagation(); toggleSegment(seg) }}
+                                      disabled={!audioUrl}
+                                      title={audioUrl ? 'Preview this moment' : 'Audio unavailable'}
+                                      className={`ml-auto w-6 h-6 rounded-full flex items-center justify-center border transition-all disabled:opacity-30 disabled:cursor-not-allowed shrink-0 ${isPeak ? 'border-[#e6c27a]/40 bg-[#e6c27a]/10 text-[#e6c27a] hover:bg-[#e6c27a]/20' : 'border-[#9381ff]/30 bg-[#9381ff]/10 text-[#9381ff] hover:bg-[#9381ff]/20'}`}
+                                    >
+                                      {playingSegId === seg.id ? <Pause className="w-3 h-3" /> : <Play className="w-3 h-3 ml-0.5" />}
+                                    </button>
                                   </div>
                                   <p className={`text-[15px] font-serif italic leading-relaxed ${isPeak ? 'text-[#f8e5b9] drop-shadow-[0_0_15px_rgba(230,194,122,0.2)]' : 'text-white/90'}`}>
                                     &ldquo;{seg.text}&rdquo;

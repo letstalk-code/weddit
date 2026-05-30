@@ -1,7 +1,12 @@
+export type ProcessingStage = 'transcribing' | 'analyzing'
+
 export interface ProjectMeta {
   id: string
   title: string
   status: 'created' | 'processing' | 'ready' | 'error'
+  stage?: ProcessingStage
+  startedAt?: number
+  audioDurationSec?: number
   createdAt: number
   updatedAt: number
 }

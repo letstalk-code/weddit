@@ -18,6 +18,9 @@ export async function POST(_request: Request, { params }: { params: Promise<{ id
 
     const meta = await getJson<ProjectMeta>(`projects/${id}/meta.json`)
     meta.status = 'processing'
+    meta.stage = 'transcribing'
+    meta.startedAt = Date.now()
+    delete meta.audioDurationSec // clear any stale duration from a prior run
     meta.updatedAt = Date.now()
     await putJson(`projects/${id}/meta.json`, meta)
 
