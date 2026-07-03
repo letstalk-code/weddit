@@ -332,10 +332,24 @@ export default function WorkspacePage() {
     return () => { cancelled = true }
   }, [id, status, segments.length, audioUrl])
 
+  // Presigned R2 URLs expire after an hour — if playback fails mid-session,
+  // fetch a fresh one instead of leaving the preview/play buttons dead.
+  const audioRetriedRef = useRef(false)
+  function handleAudioError() {
+    if (audioRetriedRef.current) return
+    audioRetriedRef.current = true
+    fetch(`/api/projects/${id}/audio`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => { if (d?.url) setAudioUrl(d.url) })
+      .catch(() => {})
+      .finally(() => { audioRetriedRef.current = false })
+  }
+
   // ── Generate story ───────────────────────────────────────────────────────────
 
   async function handleGenerateStory() {
     setGenerating(true)
+    setError(null)
     try {
       const res = await fetch(`/api/projects/${id}/story`, {
         method: 'POST',
@@ -345,7 +359,12 @@ export default function WorkspacePage() {
       if (res.ok) {
         const data: Story = await res.json()
         setStory(data)
+      } else {
+        const data = await res.json().catch(() => ({}))
+        setError(data.error || `Failed to generate story (${res.status})`)
       }
+    } catch (err) {
+      setError((err as Error).message)
     } finally {
       setGenerating(false)
     }
@@ -358,12 +377,13 @@ export default function WorkspacePage() {
     const extension = file.name.split('.').pop()?.toLowerCase() ?? 'mp3'
     const allowed = ['mp3', 'mp4', 'wav', 'm4a', 'mov']
     if (!allowed.includes(extension)) {
-      alert(`Format .${extension} not supported. Please use mp3, mp4, wav, or m4a.`)
+      setError(`Format .${extension} not supported. Please use mp3, mp4, wav, or m4a.`)
       return
     }
 
     setUploading(true)
     setUploadProgress(0)
+    setError(null)
 
     try {
       console.log('Fetching presigned URL...')
@@ -423,34 +443,36 @@ export default function WorkspacePage() {
       console.log('Status set to processing')
     } catch (err) {
       console.error('Upload error details:', err)
-      alert(`Upload failed: ${(err as Error).message}`)
+      setError(`Upload failed: ${(err as Error).message}`)
     } finally {
       setUploading(false)
       setUploadProgress(0)
     }
   }
 
-  // ── Add segment to beat (local state) ────────────────────────────────────────
+  // ── Add segment to beat (persisted to R2 so Export sees the same arc) ────────
 
   function handleAddToArc(segId: string, beatName: StoryBeat['name']) {
-    setStory((prev) => {
-      if (!prev) {
-        // Create a skeleton story with empty beats
-        const beats: StoryBeat[] = (['Hook', 'Build', 'Peak', 'Resolve'] as const).map((n) => ({
-          name: n,
-          segment_ids: n === beatName ? [segId] : [],
-        }))
-        return { beats }
-      }
-      return {
-        beats: prev.beats.map((b) =>
-          b.name === beatName
-            ? { ...b, segment_ids: b.segment_ids.includes(segId) ? b.segment_ids : [...b.segment_ids, segId] }
-            : b,
-        ),
-      }
-    })
+    const base: Story = story ?? {
+      beats: (['Hook', 'Build', 'Peak', 'Resolve'] as const).map((n) => ({ name: n, segment_ids: [] })),
+    }
+    const next: Story = {
+      beats: base.beats.map((b) =>
+        b.name === beatName
+          ? { ...b, segment_ids: b.segment_ids.includes(segId) ? b.segment_ids : [...b.segment_ids, segId] }
+          : b,
+      ),
+    }
+    setStory(next)
     setArcDropdown(null)
+    fetch(`/api/projects/${id}/story`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(next),
+    }).catch((err) => {
+      console.error('Failed to save arc edit:', err)
+      setError('Failed to save your arc edit — it may not be reflected in the export.')
+    })
   }
 
   // ── Derived data ──────────────────────────────────────────────────────────────
@@ -540,6 +562,7 @@ export default function WorkspacePage() {
         src={audioUrl ?? undefined}
         onTimeUpdate={handleTimeUpdate}
         onEnded={stopPlayback}
+        onError={handleAudioError}
         preload="none"
       />
 
@@ -685,7 +708,7 @@ export default function WorkspacePage() {
             <div className="flex-1 overflow-y-auto p-6 space-y-10">
               {error && (
                 <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4 text-red-400 text-sm flex flex-col gap-2">
-                  <p className="font-semibold uppercase tracking-wider text-[10px]">Connection Error</p>
+                  <p className="font-semibold uppercase tracking-wider text-[10px]">Error</p>
                   <p>{error}</p>
                 </div>
               )}
@@ -794,7 +817,7 @@ export default function WorkspacePage() {
                 <p className="text-brand-muted text-sm text-center mt-12">Upload audio to begin.</p>
               )}
               {segments.map((seg) => {
-                const score = Math.round(seg.story_score * 100)
+                const score = Math.round(seg.story_score)
                 const isActive = activeSegment === seg.id
                 const isPeak = score >= 90
                 return (
