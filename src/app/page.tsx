@@ -126,7 +126,7 @@ export default function DashboardPage() {
           >
             <div>
               <h1 className="text-3xl font-serif tracking-wide mb-2 text-gradient">Welcome, Devon Curry</h1>
-              <p className="text-brand-muted text-[15px] font-light">Let's curate the most emotional moments from your wedding films</p>
+              <p className="text-brand-muted text-[15px] font-light">Let&apos;s curate the most emotional moments from your wedding films</p>
             </div>
           </motion.div>
 
@@ -371,7 +371,7 @@ function SidebarIcon({ icon, active, tooltip }: { icon: React.ReactNode, active?
       <div className={`p-2.5 rounded-lg transition-all duration-300
         ${active ? 'bg-[#e94a47]/10 text-[#e94a47]' : 'text-[#88888b] hover:bg-brand-text/5 hover:text-brand-text/90'}
       `}>
-        {React.cloneElement(icon as React.ReactElement<any>, { className: 'w-5 h-5' })}
+        {React.cloneElement(icon as React.ReactElement<{ className?: string }>, { className: 'w-5 h-5' })}
       </div>
       {active && (
         <motion.div layoutId="activeMainSideNav" className="absolute -left-0 top-1/2 -translate-y-1/2 w-[3px] h-6 bg-[#e94a47] rounded-r-full" />

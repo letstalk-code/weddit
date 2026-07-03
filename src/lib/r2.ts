@@ -18,7 +18,7 @@ function getS3Client() {
 }
 
 function isReadable(value: unknown): value is Readable {
-  return typeof value === 'object' && value !== null && typeof (value as any).pipe === 'function'
+  return typeof value === 'object' && value !== null && typeof (value as { pipe?: unknown }).pipe === 'function'
 }
 
 async function streamToBuffer(
@@ -88,7 +88,7 @@ export async function presignDownload(key: string, expiresIn = 3600): Promise<st
 export async function getObject(key: string): Promise<Buffer> {
   const { client, bucketName } = getS3Client()
   const response = await client.send(new GetObjectCommand({ Bucket: bucketName, Key: key }))
-  return streamToBuffer(response.Body as any)
+  return streamToBuffer(response.Body as Parameters<typeof streamToBuffer>[0])
 }
 
 export async function objectExists(key: string): Promise<boolean> {
@@ -97,7 +97,7 @@ export async function objectExists(key: string): Promise<boolean> {
     await client.send(new HeadObjectCommand({ Bucket: bucketName, Key: key }))
     return true
   } catch (error) {
-    const code = (error as any)?.$metadata?.httpStatusCode
+    const code = (error as { $metadata?: { httpStatusCode?: number } })?.$metadata?.httpStatusCode
     const name = (error as Error).name
     if (code === 404 || name === 'NotFound' || name === 'NoSuchKey') {
       return false

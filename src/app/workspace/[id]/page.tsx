@@ -14,11 +14,11 @@ import {
   Sparkles,
   Command,
   ChevronRight,
-  GripVertical,
   Loader2,
   Upload,
   Play,
   Pause,
+  X,
 } from 'lucide-react'
 import type { Segment, Story, StoryBeat, Transcript, TranscriptWord } from '@/lib/types'
 
@@ -345,6 +345,24 @@ export default function WorkspacePage() {
       .finally(() => { audioRetriedRef.current = false })
   }
 
+  // ── Export ───────────────────────────────────────────────────────────────────
+
+  const handleExport = useCallback(() => {
+    window.location.href = `/api/projects/${id}/export`
+  }, [id])
+
+  // ⌘E / Ctrl+E triggers the export the header button advertises.
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'e') {
+        e.preventDefault()
+        handleExport()
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [handleExport])
+
   // ── Generate story ───────────────────────────────────────────────────────────
 
   async function handleGenerateStory() {
@@ -452,6 +470,19 @@ export default function WorkspacePage() {
 
   // ── Add segment to beat (persisted to R2 so Export sees the same arc) ────────
 
+  // Persist an arc edit to R2 so it survives refresh and the FCP export reflects
+  // it. Optimistic: state is already set by the caller.
+  function persistStory(next: Story) {
+    fetch(`/api/projects/${id}/story`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(next),
+    }).catch((err) => {
+      console.error('Failed to save arc edit:', err)
+      setError('Failed to save your arc edit — it may not be reflected in the export.')
+    })
+  }
+
   function handleAddToArc(segId: string, beatName: StoryBeat['name']) {
     const base: Story = story ?? {
       beats: (['Hook', 'Build', 'Peak', 'Resolve'] as const).map((n) => ({ name: n, segment_ids: [] })),
@@ -465,14 +496,20 @@ export default function WorkspacePage() {
     }
     setStory(next)
     setArcDropdown(null)
-    fetch(`/api/projects/${id}/story`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(next),
-    }).catch((err) => {
-      console.error('Failed to save arc edit:', err)
-      setError('Failed to save your arc edit — it may not be reflected in the export.')
-    })
+    persistStory(next)
+  }
+
+  // Pull a moment back out of a beat. The only way (short of regenerating) to
+  // undo an Add-to-Arc, so the arc is actually editable.
+  function handleRemoveFromArc(segId: string, beatName: StoryBeat['name']) {
+    if (!story) return
+    const next: Story = {
+      beats: story.beats.map((b) =>
+        b.name === beatName ? { ...b, segment_ids: b.segment_ids.filter((s) => s !== segId) } : b,
+      ),
+    }
+    setStory(next)
+    persistStory(next)
   }
 
   // ── Derived data ──────────────────────────────────────────────────────────────
@@ -664,7 +701,7 @@ export default function WorkspacePage() {
             <motion.button
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              onClick={() => { window.location.href = `/api/projects/${id}/export` }}
+              onClick={handleExport}
               className="group relative flex items-center gap-2.5 bg-[#131315] hover:bg-[#1a1a1d] text-brand-text px-6 py-2.5 rounded-lg text-sm font-medium transition-all border border-brand-border-highlight overflow-hidden"
             >
               <Download className="w-4 h-4 text-[#c99d4a] group-hover:text-brand-text transition-colors z-10 relative" />
@@ -986,10 +1023,9 @@ export default function WorkspacePage() {
                                   className={`glass-card rounded-xl p-5 relative overflow-hidden ${isPeak ? 'border-[#c99d4a]/20' : ''}`}
                                 >
                                   {isPeak && (
-                                    <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-transparent via-[#c99d4a] to-transparent opacity-50" />
+                                    <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-[#c99d4a]/60" />
                                   )}
                                   <div className="flex items-center gap-2 mb-2 text-brand-muted">
-                                    <GripVertical className="w-3.5 h-3.5" />
                                     <span className={`text-[10px] uppercase tracking-wider font-mono ${isPeak ? 'text-[#c99d4a]/60' : ''}`}>
                                       {seg.speaker}
                                     </span>
@@ -1001,6 +1037,13 @@ export default function WorkspacePage() {
                                     >
                                       {playingSegId === seg.id ? <Pause className="w-3 h-3" /> : <Play className="w-3 h-3 ml-0.5" />}
                                     </button>
+                                    <button
+                                      onClick={(e) => { e.stopPropagation(); handleRemoveFromArc(seg.id, beatName) }}
+                                      title="Remove from arc"
+                                      className="w-6 h-6 rounded-full flex items-center justify-center border border-brand-border text-brand-muted hover:text-[#e94a47] hover:border-[#e94a47]/40 transition-all shrink-0"
+                                    >
+                                      <X className="w-3 h-3" />
+                                    </button>
                                   </div>
                                   <p className={`text-[15px] font-serif italic leading-relaxed ${isPeak ? 'text-[#e8d5ac]' : 'text-brand-text/90'}`}>
                                     &ldquo;{seg.text}&rdquo;
@@ -1009,11 +1052,9 @@ export default function WorkspacePage() {
                               ))}
                             </div>
                           ) : (
-                            <div className="min-h-[80px] rounded-xl p-5 border border-dashed border-brand-text/10 bg-brand-text/[0.01] hover:bg-brand-text/[0.03] hover:border-[#e94a47]/30 transition-all duration-300 flex flex-col items-center justify-center gap-2 opacity-30 hover:opacity-60 cursor-pointer">
-                              <div className="w-8 h-8 rounded-full border border-dashed border-brand-text/40 flex items-center justify-center">
-                                <span className="text-brand-text pb-0.5 text-lg">+</span>
-                              </div>
-                              <span className="text-[11px] uppercase tracking-widest font-mono">Drag Fragment Here</span>
+                            <div className="min-h-[72px] rounded-xl p-5 border border-dashed border-brand-text/10 bg-brand-text/[0.01] flex flex-col items-center justify-center gap-2 opacity-40 text-center">
+                              <span className="text-[11px] uppercase tracking-widest font-mono text-brand-muted">Empty</span>
+                              <span className="text-[11px] text-brand-muted/70 normal-case tracking-normal font-sans">Use “Add to Arc” on a moment to place it here</span>
                             </div>
                           )}
                         </div>
