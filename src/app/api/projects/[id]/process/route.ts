@@ -28,7 +28,7 @@ export async function POST(_request: Request, { params }: { params: Promise<{ id
     try {
       const res = await fetch(webhookUrl, {
         method: 'POST',
-        body: JSON.stringify({ project_id: id }),
+        body: JSON.stringify({ project_id: id, secret: process.env.WORKER_SECRET }),
         headers: { 'Content-Type': 'application/json' },
       })
       triggered = res.ok

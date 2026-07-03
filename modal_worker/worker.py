@@ -345,6 +345,14 @@ def run_process(project_id: str) -> None:
 @app.function(image=image, secrets=[modal.Secret.from_name('weddit-secrets')])
 @modal.fastapi_endpoint(method='POST')
 def process_project(data: dict) -> dict:
+    # Shared-secret gate: the Vercel process route sends WORKER_SECRET in the
+    # body. The webhook URL is otherwise public, so this stops anyone who finds
+    # it from spawning jobs on the account. Skipped when no secret is configured.
+    expected = os.environ.get('WORKER_SECRET')
+    if expected and data.get('secret') != expected:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=401, detail='unauthorized')
+
     project_id = data.get('project_id')
     if not project_id:
         return {'error': 'project_id required'}
