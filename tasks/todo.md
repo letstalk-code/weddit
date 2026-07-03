@@ -168,9 +168,13 @@ end-to-end against a dev server. Two things I could NOT do and you must:
 
 ## P2 — Product polish (the Plotline-feel gap)
 
-- [ ] Implement drag & drop for the arc (UI already advertises "Drag Fragment
-      Here" + grip handles, but no DnD exists) — or remove the affordance.
-- [ ] Wire the ⌘E shortcut the Export button advertises (or drop the hint).
+- [x] Arc affordance honesty (2026-07-03): removed the fake "Drag Fragment
+      Here" + grip handles (no DnD existed) and instead added a real
+      remove-from-arc (×) button — Add-to-Arc now has an inverse, so the arc
+      is actually editable. Empty beats read "Use Add to Arc on a moment to
+      place it here." (Full drag-to-reorder DnD deliberately NOT built —
+      would be a feature, not a fix.)
+- [x] Wired ⌘E / Ctrl+E to Export.
 - [ ] Remove/disable dead sidebar icons (Search, Settings do nothing).
 - [ ] Real waveform from the audio instead of the decorative sine animation.
 - [ ] A few unit tests for the pure logic: fcpxml frame math + escaping,
@@ -178,7 +182,8 @@ end-to-end against a dev server. Two things I could NOT do and you must:
 - [ ] Error monitoring (Sentry free tier) so production failures are visible.
 
 ## Housekeeping
-- [ ] Commit the uncommitted changes (worker.py, fcpxml.ts, story.ts) and
-      redeploy the Modal worker so the paragraph-segmentation change is live.
-- [ ] `/workspace` (no id) is a hardcoded mock page — delete or clearly mark
-      as design reference so it's never mistaken for the real app.
+- [x] Committed the worker.py/fcpxml.ts/story.ts changes (done in Batch A).
+      Modal worker STILL needs `modal deploy` — see Batch B deploy checklist.
+- [x] Deleted `/workspace` (no-id) hardcoded mock page (2026-07-03).
+- [x] Lint clean (2026-07-03): all 17 errors cleared (typed `any`s, escaped
+      entity; most lived in the deleted mock page).
