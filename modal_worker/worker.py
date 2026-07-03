@@ -333,13 +333,25 @@ def clamp(value: float, minimum: float = 0.0, maximum: float = 100.0) -> float:
 
 # ── Entry point ──────────────────────────────────────────────────────────────
 
-@app.function(timeout=600, image=image, secrets=[modal.Secret.from_name('weddit-secrets')])
+# The heavy job runs as its own Modal function so it is NOT bounded by the
+# webhook's HTTP request. A generous timeout lets long weddings finish; it is
+# kept below the app's ~20-min watchdog so a job Modal kills here is always
+# surfaced as an error rather than spinning forever.
+@app.function(timeout=900, image=image, secrets=[modal.Secret.from_name('weddit-secrets')])
+def run_process(project_id: str) -> None:
+    _run_process_project(project_id)
+
+
+@app.function(image=image, secrets=[modal.Secret.from_name('weddit-secrets')])
 @modal.fastapi_endpoint(method='POST')
 def process_project(data: dict) -> dict:
     project_id = data.get('project_id')
     if not project_id:
         return {'error': 'project_id required'}
-    _run_process_project(project_id)
+    # Detach the real work and return immediately: the webhook stays fast (so the
+    # awaited fetch from Vercel can't be frozen mid-flight) and the job survives
+    # independently of this request.
+    run_process.spawn(project_id)
     return {'status': 'processing', 'project_id': project_id}
 
 
@@ -369,4 +381,5 @@ def _run_process_project(project_id: str) -> None:
 
 @app.local_entrypoint()
 def local_test():
-    process_project.remote({'project_id': 'test-project-id'})
+    # Run the real work synchronously so a local test actually waits for it.
+    run_process.remote('test-project-id')
