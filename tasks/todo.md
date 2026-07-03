@@ -102,7 +102,7 @@ Batch B." Do not continue. <<<**
 
 ## Batch B — Opus 4.8 (deployment-coupled, quiet-failure risk)
 
-- [ ] **B1. Jobs can hang in "processing" forever.** Two causes:
+- [x] **B1. Jobs can hang in "processing" forever.** Two causes:
       1. `process/route.ts` fires the Modal webhook without `await` — on
          Vercel the function can freeze before the request ever leaves, so
          processing never starts but status says processing.
@@ -115,7 +115,7 @@ Batch B." Do not continue. <<<**
       watchdog in the status route that marks the project `error` if status
       is processing and `startedAt` is older than ~20 min. Requires
       `modal deploy` + one end-to-end test with real audio.
-- [ ] **B2. No auth at all.** Every API route is open: anyone with the URL
+- [x] **B2. No auth at all.** Every API route is open: anyone with the URL
       can create projects, upload audio, trigger Modal jobs (Deepgram +
       Claude bill), and read every transcript. Modal webhook is also public.
       Fix (minimal, single-user): shared secret — Next.js middleware checks
@@ -124,6 +124,32 @@ Batch B." Do not continue. <<<**
       secret in the Modal secret bundle). Verify you can still log in BEFORE
       deploying, and keep the middleware matcher away from /api/… used by
       the Modal worker if any.
+      NOTE: implemented as a body secret (not a bearer header) — see the B2
+      commit message for why. Auth uses Next 16's `proxy.ts` (renamed from
+      the deprecated `middleware.ts`).
+
+## Batch B — deploy & verify (owner: user — I can't run these from here)
+
+I made and locally build-verified all code, and verified the auth flow
+end-to-end against a dev server. Two things I could NOT do and you must:
+
+- [ ] **Redeploy the Modal worker** so the .spawn() split + secret check go
+      live: `modal deploy modal_worker/worker.py`. Until you do, the OLD
+      synchronous worker is still running and B1's fix isn't active.
+- [ ] **Set the new env vars** (same value where shared):
+      - Vercel: `APP_PASSWORD`, `WORKER_SECRET`
+      - Modal `weddit-secrets` bundle: `WORKER_SECRET` (identical value)
+      - Local `.env.local`: both, if you want the gate/secret active locally
+        (leave `APP_PASSWORD` blank locally to skip the login screen).
+- [ ] **End-to-end test with real audio** after deploy: upload → confirm it
+      transcribes and reaches "ready" (proves the spawn path works), then
+      confirm a wrong/absent WORKER_SECRET is rejected (jobs only trigger
+      from the app).
+- [ ] **Watchdog reminder:** a job is force-failed after 20 min of
+      "processing" (worker timeout is 900s/15 min). If you ever process very
+      long audio that legitimately needs >15 min, raise `run_process`'s
+      timeout in worker.py AND `STUCK_JOB_MS` in the status route together
+      (keep watchdog > worker timeout).
 
 ## P2 — Product polish (the Plotline-feel gap)
 
