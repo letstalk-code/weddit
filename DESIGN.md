@@ -85,6 +85,21 @@ markers/dots. The page never turns red.
 - Toggle: red when on.
 - Input: dark well, hairline border, radius 6-8px; focus = red border.
 
+## App components (from the real product screens, 2026-07-03)
+Adopted into Weddit's workspace:
+- Speaker identity: rounded-square avatar (~24px, radius 6px), 2-letter initials,
+  filled at 15% of the speaker's hue with the hue as text. Same hue colours the
+  caps speaker label AND a 2px left rule on that speaker's transcript block.
+- Speaker hue palette: #c99d4a, #e94a47, #86b48a, #7c9cc4, #b18fc4, #d98f6a.
+- Moment/segment card: avatar + caps speaker + engagement pill on the right
+  (● dot + "High/Medium/Low Engagement" in red/amber/sage), serif italic quote,
+  footer = play + mono timecode RANGE (start–end). NO circular score rings —
+  Plotline never uses radial gauges (too dashboard-y).
+- Emotion/Story Arc: horizontal sparkline of emotion over the story order, dots
+  coloured by level (peak=red, tension=amber, quiet=sage), soft area fill, axis
+  labelled by beat. Plotline's signature visual. A gradient stroke is acceptable
+  HERE (chart data-encoding) even though gradients are banned on UI surfaces.
+
 ## Bans (what this brand never does)
 - Pure #000 or #fff anywhere
 - Box-shadows, glassmorphism, backdrop-blur panels

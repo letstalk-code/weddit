@@ -149,11 +149,34 @@ function ProcessingProgress({
   )
 }
 
-const SPEAKER_COLORS = ['text-[#c99d4a]', 'text-[#e94a47]', 'text-[#86b48a]', 'text-[#f08080]']
+// Per-speaker accent hues (Plotline colour-codes each speaker across the avatar,
+// the caps label, and the block's left rule).
+const SPEAKER_HEXES = ['#c99d4a', '#e94a47', '#86b48a', '#7c9cc4', '#b18fc4', '#d98f6a']
 
-function speakerColor(speaker: string, allSpeakers: string[]): string {
+function speakerHex(speaker: string, allSpeakers: string[]): string {
   const idx = allSpeakers.indexOf(speaker)
-  return SPEAKER_COLORS[idx % SPEAKER_COLORS.length] ?? 'text-brand-muted'
+  return SPEAKER_HEXES[(idx < 0 ? 0 : idx) % SPEAKER_HEXES.length]
+}
+
+// "Speaker 0" -> "S0"; "Lamont Lipscomb" -> "LL".
+function speakerInitials(speaker: string): string {
+  const m = speaker.match(/speaker\s*(\d+)/i)
+  if (m) return `S${m[1]}`
+  const parts = speaker.trim().split(/\s+/)
+  return ((parts[0]?.[0] ?? '') + (parts[1]?.[0] ?? '')).toUpperCase() || '?'
+}
+
+function hexToRgba(hex: string, a: number): string {
+  const n = parseInt(hex.slice(1), 16)
+  return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${a})`
+}
+
+// Qualitative engagement label from the 0–100 story score (Plotline labels
+// moments "High/Medium/Low Engagement" rather than showing a raw number).
+function engagement(score: number): { label: string; hex: string } {
+  if (score >= 70) return { label: 'High Engagement', hex: '#e94a47' }
+  if (score >= 45) return { label: 'Medium Engagement', hex: '#c99d4a' }
+  return { label: 'Low Engagement', hex: '#86b48a' }
 }
 
 // ── Main page ─────────────────────────────────────────────────────────────────
@@ -515,7 +538,7 @@ export default function WorkspacePage() {
   // ── Derived data ──────────────────────────────────────────────────────────────
 
   const transcriptBlocks = transcript ? groupWordsBySpeaker(transcript.words) : []
-  const allSpeakers = [...new Set(transcriptBlocks.map((b) => b.speaker))]
+  const allSpeakers = [...new Set([...transcriptBlocks.map((b) => b.speaker), ...segments.map((s) => s.speaker)])]
 
   const segmentMap = new Map(segments.map((s) => [s.id, s]))
 
@@ -801,20 +824,32 @@ export default function WorkspacePage() {
               {!isProcessing && status !== 'created' && transcriptBlocks.length === 0 && (
                 <p className="text-brand-muted text-sm text-center mt-12">No transcript available.</p>
               )}
-              {transcriptBlocks.map((block) => (
-                <div key={block.id} className="group relative pr-4">
-                  <div className="flex items-center gap-3 mb-2 opacity-80 group-hover:opacity-100 transition-opacity">
-                    <span className="font-mono text-[10px] text-brand-muted/70 tracking-wider pt-0.5">{msToTimecode(block.start_ms)}</span>
-                    <div className="flex-1 h-px bg-gradient-to-r from-brand-border to-transparent" />
-                    <span className={`text-[11px] font-medium tracking-wide uppercase ${speakerColor(block.speaker, allSpeakers)}`}>
-                      {block.speaker}
-                    </span>
+              {transcriptBlocks.map((block) => {
+                const hex = speakerHex(block.speaker, allSpeakers)
+                return (
+                  <div
+                    key={block.id}
+                    className="group relative pl-4"
+                    style={{ borderLeft: `2px solid ${hexToRgba(hex, 0.5)}` }}
+                  >
+                    <div className="flex items-center gap-2.5 mb-2">
+                      <span
+                        className="w-6 h-6 rounded-md flex items-center justify-center text-[10px] font-semibold shrink-0"
+                        style={{ backgroundColor: hexToRgba(hex, 0.15), color: hex }}
+                      >
+                        {speakerInitials(block.speaker)}
+                      </span>
+                      <span className="text-[11px] font-medium tracking-wider uppercase" style={{ color: hex }}>
+                        {block.speaker}
+                      </span>
+                      <span className="ml-auto font-mono text-[10px] text-brand-muted/60 tracking-wider">{msToTimecode(block.start_ms)}</span>
+                    </div>
+                    <p className="text-[15px] leading-[1.75] font-sans font-light text-brand-muted group-hover:text-brand-text/80 transition-colors duration-300">
+                      {block.text}
+                    </p>
                   </div>
-                  <p className="text-[15px] leading-[1.8] font-sans font-light text-brand-muted group-hover:text-brand-text/70 transition-all duration-300">
-                    &ldquo;{block.text}&rdquo;
-                  </p>
-                </div>
-              ))}
+                )
+              })}
             </div>
           </section>
 
@@ -851,54 +886,39 @@ export default function WorkspacePage() {
               {segments.map((seg) => {
                 const score = Math.round(seg.story_score)
                 const isActive = activeSegment === seg.id
-                const isPeak = score >= 90
+                const eng = engagement(score)
+                const hex = speakerHex(seg.speaker, allSpeakers)
                 return (
                   <motion.div
                     key={seg.id}
                     initial="hidden" animate="show" variants={itemVariants}
                     onClick={() => setActiveSegment(seg.id)}
-                    className={`glass-card p-5 rounded-xl cursor-pointer relative overflow-hidden group transition-all duration-500
-                      ${isActive
-                        ? 'border-[#e94a47]/40 bg-[#e94a47]/[0.02]'
-                        : 'hover:border-brand-text/20 '
-                      }`}
+                    className={`glass-card p-5 rounded-xl cursor-pointer relative overflow-hidden group transition-colors duration-300
+                      ${isActive ? 'border-[#e94a47]/40 bg-[#e94a47]/[0.03]' : 'hover:border-brand-text/20'}`}
                   >
-                    {isActive && (
-                      <motion.div
-                        layoutId="activeSegmentHighlight"
-                        className="absolute inset-0 bg-[#e94a47]/[0.04] pointer-events-none"
-                      />
-                    )}
-
-                    <div className="flex justify-between items-start mb-4 relative z-10">
-                      <div>
-                        <h4 className={`text-sm tracking-wide font-medium flex items-center gap-2 ${isPeak ? 'text-gradient-gold' : 'text-brand-text/90'}`}>
-                          {seg.text.slice(0, 30)}{seg.text.length > 30 ? '…' : ''}
-                          {isPeak && <Sparkles className="w-3 h-3 text-[#c99d4a]" />}
-                        </h4>
-                        <p className="text-[11px] font-mono text-brand-muted/70 mt-1 uppercase tracking-wider">{seg.speaker}</p>
-                      </div>
-
-                      {/* Score ring */}
-                      <div className="relative w-9 h-9 flex items-center justify-center shrink-0">
-                        <svg className="absolute inset-0 w-full h-full -rotate-90">
-                          <circle cx="18" cy="18" r="16" className="fill-none stroke-brand-border stroke-2" />
-                          <circle
-                            cx="18" cy="18" r="16"
-                            className={`fill-none stroke-2 stroke-linecap-round ${isPeak ? 'stroke-[#c99d4a]' : 'stroke-[#e94a47]'}`}
-                            style={{ strokeDasharray: 100, strokeDashoffset: 100 - score }}
-                          />
-                        </svg>
-                        <span className="text-[10px] font-bold text-brand-text/80">{score}</span>
-                      </div>
+                    {/* Header: speaker + engagement */}
+                    <div className="flex items-center gap-2 mb-3 relative z-10">
+                      <span
+                        className="w-6 h-6 rounded-md flex items-center justify-center text-[10px] font-semibold shrink-0"
+                        style={{ backgroundColor: hexToRgba(hex, 0.15), color: hex }}
+                      >
+                        {speakerInitials(seg.speaker)}
+                      </span>
+                      <span className="text-[11px] font-medium tracking-wider uppercase truncate" style={{ color: hex }}>
+                        {seg.speaker}
+                      </span>
+                      <span className="ml-auto flex items-center gap-1.5 shrink-0">
+                        <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: eng.hex }} />
+                        <span className="text-[10px] uppercase tracking-wider font-medium" style={{ color: eng.hex }}>{eng.label}</span>
+                      </span>
                     </div>
 
-                    <p className="font-serif text-[15.5px] leading-relaxed text-[#ddd8ce] mb-5 italic relative z-10 opacity-90 group-hover:opacity-100 transition-opacity">
+                    <p className="font-serif text-[15.5px] leading-relaxed text-[#ddd8ce] mb-4 italic relative z-10 group-hover:text-brand-text/95 transition-colors">
                       &ldquo;{seg.text}&rdquo;
                     </p>
 
                     <div className="flex items-center justify-between mt-auto relative z-10">
-                      <div className="flex gap-2 items-center">
+                      <div className="flex gap-2.5 items-center">
                         <button
                           onClick={(e) => { e.stopPropagation(); toggleSegment(seg) }}
                           disabled={!audioUrl}
@@ -907,8 +927,9 @@ export default function WorkspacePage() {
                         >
                           {playingSegId === seg.id ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5 ml-0.5" />}
                         </button>
-                        <Badge text={`${Math.round((seg.end_ms - seg.start_ms) / 1000)}s`} />
-                        <Badge text={msToTimecode(seg.start_ms)} />
+                        <span className="font-mono text-[10px] text-brand-muted/70 tracking-wider tabular-nums">
+                          {msToTimecode(seg.start_ms)}–{msToTimecode(seg.end_ms)}
+                        </span>
                       </div>
 
                       {/* Add to Arc button + dropdown */}
@@ -979,6 +1000,7 @@ export default function WorkspacePage() {
             </div>
 
             <div className="flex-1 overflow-y-auto px-8 py-10">
+              {assignedSegs.length >= 2 && <EmotionArc segs={assignedSegs} />}
               <div className="space-y-14 relative">
                 <div className="absolute left-[15px] top-6 bottom-0 w-px bg-gradient-to-b from-brand-border via-brand-border to-transparent" />
 
@@ -1074,6 +1096,47 @@ export default function WorkspacePage() {
 
 // ── Micro components ──────────────────────────────────────────────────────────
 
+// Compact emotional-arc sparkline over the assembled story order — evokes
+// Plotline's Story Arc chart. Dots are coloured by emotion level; the line and
+// soft fill stay flat (no gradient surfaces).
+function EmotionArc({ segs }: { segs: Segment[] }) {
+  const W = 320
+  const H = 96
+  const padX = 6
+  const padY = 14
+  const level = (e: number) => (e >= 66 ? '#e94a47' : e >= 40 ? '#c99d4a' : '#86b48a')
+  const pts = segs.map((s, i) => {
+    const x = padX + (segs.length === 1 ? 0.5 : i / (segs.length - 1)) * (W - padX * 2)
+    const y = padY + (1 - Math.max(0, Math.min(100, s.emotion_score)) / 100) * (H - padY * 2)
+    return { x, y, hex: level(s.emotion_score) }
+  })
+  const line = pts.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(' ')
+  const area = `${line} L${pts[pts.length - 1].x.toFixed(1)} ${H - padY} L${pts[0].x.toFixed(1)} ${H - padY} Z`
+  return (
+    <div className="mb-10 rounded-xl border border-brand-border p-4 bg-brand-surface">
+      <div className="flex items-center gap-2 mb-3">
+        <span className="w-1.5 h-1.5 rounded-full bg-[#e94a47]" />
+        <span className="text-[10px] uppercase tracking-widest font-mono text-brand-muted">Emotional Arc</span>
+        <span className="ml-auto text-[10px] uppercase tracking-wider text-brand-muted/60">{segs.length} moments</span>
+      </div>
+      <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-auto" preserveAspectRatio="none">
+        <line x1={padX} y1={padY} x2={W - padX} y2={padY} stroke="rgba(245,242,236,0.06)" />
+        <line x1={padX} y1={H - padY} x2={W - padX} y2={H - padY} stroke="rgba(245,242,236,0.06)" />
+        <path d={area} fill="rgba(201,157,74,0.08)" />
+        <path d={line} fill="none" stroke="rgba(201,157,74,0.65)" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" />
+        {pts.map((p, i) => (
+          <circle key={i} cx={p.x} cy={p.y} r={2.6} fill={p.hex} />
+        ))}
+      </svg>
+      <div className="flex justify-between text-[9px] uppercase tracking-wider text-brand-muted/50 font-mono mt-1">
+        <span>Hook</span>
+        <span>Peak</span>
+        <span>Resolve</span>
+      </div>
+    </div>
+  )
+}
+
 function SidebarIcon({ icon, active, tooltip }: { icon: React.ReactNode; active?: boolean; tooltip: string }) {
   return (
     <div className="relative group/icon cursor-pointer flex justify-center w-full">
@@ -1087,13 +1150,5 @@ function SidebarIcon({ icon, active, tooltip }: { icon: React.ReactNode; active?
         {tooltip}
       </div>
     </div>
-  )
-}
-
-function Badge({ text, isPeak }: { text: string; isPeak?: boolean }) {
-  return (
-    <span className={`px-2 py-1 rounded text-[10px] font-mono tracking-widest uppercase flex items-center border ${isPeak ? 'bg-[#c99d4a]/10 text-[#c99d4a] border-[#c99d4a]/20' : 'bg-black/40 text-brand-muted/80 border-brand-text/5'}`}>
-      {text}
-    </span>
   )
 }
