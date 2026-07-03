@@ -16,9 +16,9 @@ import {
 } from 'lucide-react';
 
 const TRANSCRIPT = [
-    { id: 1, speaker: 'James', text: "When I first saw her walking down the aisle, everything just stopped. The music, the people, it was just her.", time: "00:02:14", color: "text-[#e6c27a]", resonant: true },
-    { id: 2, speaker: 'Father', text: "He's always been the anchor for our family. And now, seeing him with Sarah...", time: "00:04:30", color: "text-[#9381ff]", resonant: false },
-    { id: 3, speaker: 'James', text: "I promise to never stop laughing with you, even when things get hard.", time: "00:15:22", color: "text-[#e6c27a]", resonant: true },
+    { id: 1, speaker: 'James', text: "When I first saw her walking down the aisle, everything just stopped. The music, the people, it was just her.", time: "00:02:14", color: "text-[#c99d4a]", resonant: true },
+    { id: 2, speaker: 'Father', text: "He's always been the anchor for our family. And now, seeing him with Sarah...", time: "00:04:30", color: "text-[#e94a47]", resonant: false },
+    { id: 3, speaker: 'James', text: "I promise to never stop laughing with you, even when things get hard.", time: "00:15:22", color: "text-[#c99d4a]", resonant: true },
     { id: 4, speaker: 'Officiant', text: "Today we celebrate the beginning of a new chapter.", time: "00:18:10", color: "text-brand-muted", resonant: false },
 ];
 
@@ -51,25 +51,22 @@ export default function AppWorkspace() {
     const [hoveredBeat, setHoveredBeat] = useState<string | null>(null);
 
     return (
-        <div className="flex h-screen w-full bg-brand-bg text-brand-text overflow-hidden font-sans selection:bg-[#9381ff]/40 selection:text-white relative">
+        <div className="flex h-screen w-full bg-brand-bg text-brand-text overflow-hidden font-sans selection:bg-[#e94a47]/40 selection:text-brand-text relative">
 
             {/* Background ambient light effects */}
             <div className="absolute inset-0 pointer-events-none overflow-hidden">
-                <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-[#9381ff]/5 rounded-full blur-[100px]" />
-                <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-[#e6c27a]/5 rounded-full blur-[120px]" />
             </div>
 
             {/* 1. SLENDER EXECUTIVE SIDEBAR */}
-            <nav className="w-[68px] glass-panel border-r-0 border-brand-border/50 flex flex-col items-center py-6 gap-8 z-20 shrink-0 shadow-2xl relative">
+            <nav className="w-[68px] glass-panel border-r-0 border-brand-border/50 flex flex-col items-center py-6 gap-8 z-20 shrink-0 relative">
                 <div className="absolute inset-y-0 right-0 w-px bg-gradient-to-b from-transparent via-brand-border to-transparent opacity-50" />
 
                 <motion.div
-                    whileHover={{ scale: 1.05, filter: 'brightness(1.15)' }}
-                    className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#9381ff] to-[#6a56cc] flex items-center justify-center shadow-[0_0_20px_rgba(147,129,255,0.3)] cursor-pointer relative group overflow-hidden"
+                    whileHover={{ scale: 1.02 }}
+                    className="w-10 h-10 rounded-xl bg-[#e94a47] flex items-center justify-center cursor-pointer relative group overflow-hidden"
                 >
-                    <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-[#e6c27a]/20 to-transparent pointer-events-none" />
-                    <div className="absolute inset-0 rounded-xl ring-1 ring-white/20 group-hover:ring-white/40 transition-all pointer-events-none" />
-                    <span className="font-serif font-bold text-[17px] text-transparent bg-clip-text bg-gradient-to-b from-[#fffaeb] to-[#e0c890] relative z-10 tracking-tight">W</span>
+                    <div className="absolute inset-0 rounded-xl ring-1 ring-brand-text/20 group-hover:ring-brand-text/40 transition-all pointer-events-none" />
+                    <span className="font-serif text-[17px] text-[#f5f2ec] relative z-10 tracking-tight">W</span>
                 </motion.div>
 
                 <div className="flex flex-col gap-8 mt-6">
@@ -86,7 +83,7 @@ export default function AppWorkspace() {
             <div className="flex flex-col flex-1 relative z-10 overflow-hidden">
 
                 {/* 2. PREMIUM CINEMATIC HEADER */}
-                <header className="h-[72px] glass-panel flex items-center justify-between px-8 z-20 shrink-0 shadow-lg relative border-b-0 border-brand-border/40">
+                <header className="h-[72px] glass-panel flex items-center justify-between px-8 z-20 shrink-0 relative border-b-0 border-brand-border/40">
                     <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-brand-border to-transparent opacity-50" />
 
                     <div className="flex items-center gap-6">
@@ -94,7 +91,7 @@ export default function AppWorkspace() {
                             <div className="flex items-center gap-2 mb-1">
                                 <h1 className="text-[10px] font-bold tracking-[0.2em] uppercase text-brand-muted/80">WEDDIT</h1>
                                 <ChevronRight className="w-3 h-3 text-brand-muted/50" />
-                                <span className="text-[10px] font-medium tracking-widest uppercase text-[#9381ff]/90 flex items-center gap-1.5 bg-[#9381ff]/10 px-2 py-0.5 rounded-full border border-[#9381ff]/20">
+                                <span className="text-[10px] font-medium tracking-widest uppercase text-[#e94a47]/90 flex items-center gap-1.5 bg-[#e94a47]/10 px-2 py-0.5 rounded-full border border-[#e94a47]/20">
                                     <Sparkles className="w-2.5 h-2.5" /> Analyzed
                                 </span>
                             </div>
@@ -105,11 +102,10 @@ export default function AppWorkspace() {
                     <motion.button
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
-                        className="group relative flex items-center gap-2.5 bg-[#171a23] hover:bg-[#1d212c] text-white px-6 py-2.5 rounded-lg text-sm font-medium transition-all shadow-[0_4px_14px_0_rgba(0,0,0,0.4)] border border-brand-border-highlight overflow-hidden"
+                        className="group relative flex items-center gap-2.5 bg-[#131315] hover:bg-[#1a1a1d] text-brand-text px-6 py-2.5 rounded-lg text-sm font-medium transition-all border border-brand-border-highlight overflow-hidden"
                     >
                         {/* Button inner glow on hover */}
-                        <div className="absolute inset-0 bg-gradient-to-r from-[#e6c27a]/0 via-[#e6c27a]/10 to-[#e6c27a]/0 opacity-0 group-hover:opacity-100 translate-x-[-100%] group-hover:translate-x-[100%] transition-all duration-1000 ease-in-out pointer-events-none" />
-                        <Download className="w-4 h-4 text-[#e6c27a] group-hover:text-white transition-colors z-10 relative" />
+                        <Download className="w-4 h-4 text-[#c99d4a] group-hover:text-brand-text transition-colors z-10 relative" />
                         <span className="relative z-10 flex items-center gap-2">
                             Export to FCP <span className="text-brand-muted text-xs border border-brand-border px-1.5 py-0.5 rounded bg-black/40"><Command className="w-3 h-3 inline pb-0.5" /> E</span>
                         </span>
@@ -120,10 +116,10 @@ export default function AppWorkspace() {
                 <main className="flex flex-1 overflow-hidden relative">
 
                     {/* PANEL A: TRANSCRIPT */}
-                    <section className="w-[30%] border-r border-brand-border/40 bg-[#0a0a0c]/40 flex flex-col relative z-10 backdrop-blur-2xl">
+                    <section className="w-[30%] border-r border-brand-border/40 bg-[#0a0a0c]/40 flex flex-col relative z-10">
                         <div className="p-6 pb-4 border-b border-brand-border/40 glass-panel sticky top-0 z-20">
                             <div className="flex items-center justify-between mb-6">
-                                <h3 className="font-serif text-xl tracking-wide text-white/90">Source Script</h3>
+                                <h3 className="font-serif text-xl tracking-wide text-brand-text/90">Source Script</h3>
                                 <span className="text-[10px] font-mono tracking-widest text-brand-muted uppercase">04:22:10 Audio</span>
                             </div>
 
@@ -145,7 +141,7 @@ export default function AppWorkspace() {
                             {TRANSCRIPT.map((block) => (
                                 <div key={block.id} className="group relative pr-4">
                                     {/* Active highlight line */}
-                                    <div className={`absolute -left-6 top-0 bottom-0 w-[2px] ${block.id === 1 || block.id === 3 ? 'bg-[#e6c27a] opacity-40 shadow-[0_0_10px_#e6c27a]' : 'bg-transparent'} transition-opacity`} />
+                                    <div className={`absolute -left-6 top-0 bottom-0 w-[2px] ${block.id === 1 || block.id === 3 ? 'bg-[#c99d4a] opacity-40' : 'bg-transparent'} transition-opacity`} />
 
                                     <div className="flex items-center gap-3 mb-2 opacity-80 group-hover:opacity-100 transition-opacity">
                                         <span className="font-mono text-[10px] text-brand-muted/70 tracking-wider pt-0.5">{block.time}</span>
@@ -155,7 +151,7 @@ export default function AppWorkspace() {
                                         </span>
                                     </div>
                                     <p className={`text-[15px] leading-[1.8] font-sans transition-all duration-300 font-light
-                    ${block.resonant ? 'text-white/95 drop-shadow-[0_2px_10px_rgba(255,255,255,0.1)]' : 'text-brand-muted group-hover:text-white/70'}
+                    ${block.resonant ? 'text-brand-text/95' : 'text-brand-muted group-hover:text-brand-text/70'}
                   `}>
                                         "{block.text}"
                                     </p>
@@ -165,12 +161,11 @@ export default function AppWorkspace() {
                     </section>
 
                     {/* PANEL B: SEGMENTS (The Raw Material) */}
-                    <section className="w-[35%] border-r border-brand-border/40 bg-[#0c0c0f]/30 flex flex-col relative z-0 backdrop-blur-xl">
-                        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(147,129,255,0.02),transparent_50%)] pointer-events-none" />
+                    <section className="w-[35%] border-r border-brand-border/40 bg-[#0e0e10]/30 flex flex-col relative z-0">
 
-                        <div className="p-6 pb-4 flex items-center justify-between z-10 sticky top-0 border-b border-white/[0.02]">
+                        <div className="p-6 pb-4 flex items-center justify-between z-10 sticky top-0 border-b border-brand-text/[0.02]">
                             <div className="flex items-center gap-3">
-                                <h3 className="font-serif text-xl tracking-wide text-white/90">Moments</h3>
+                                <h3 className="font-serif text-xl tracking-wide text-brand-text/90">Moments</h3>
                                 <span className="bg-brand-surface border border-brand-border px-2 py-0.5 rounded-full text-[10px] text-brand-muted">14 Found</span>
                             </div>
                         </div>
@@ -188,8 +183,8 @@ export default function AppWorkspace() {
                                     onClick={() => setActiveSegment(seg.id)}
                                     className={`glass-card p-5 rounded-xl cursor-pointer relative overflow-hidden group transition-all duration-500
                     ${activeSegment === seg.id
-                                            ? 'border-[#9381ff]/40 shadow-[0_8px_30px_rgba(147,129,255,0.08)] bg-[#9381ff]/[0.02]'
-                                            : 'hover:border-white/20 hover:shadow-[0_8px_30px_rgba(0,0,0,0.5)]'
+                                            ? 'border-[#e94a47]/40 bg-[#e94a47]/[0.02]'
+                                            : 'hover:border-brand-text/20 '
                                         }
                   `}
                                 >
@@ -197,15 +192,15 @@ export default function AppWorkspace() {
                                     {activeSegment === seg.id && (
                                         <motion.div
                                             layoutId="activeSegmentHighlight"
-                                            className="absolute inset-0 bg-gradient-to-br from-[#9381ff]/10 to-transparent pointer-events-none"
+                                            className="absolute inset-0 bg-[#e94a47]/[0.04] pointer-events-none"
                                         />
                                     )}
 
                                     <div className="flex justify-between items-start mb-4 relative z-10">
                                         <div>
-                                            <h4 className={`text-sm tracking-wide font-medium flex items-center gap-2 ${seg.value === 'Peak' ? 'text-gradient-gold' : 'text-white/90'}`}>
+                                            <h4 className={`text-sm tracking-wide font-medium flex items-center gap-2 ${seg.value === 'Peak' ? 'text-gradient-gold' : 'text-brand-text/90'}`}>
                                                 {seg.title}
-                                                {seg.value === 'Peak' && <Sparkles className="w-3 h-3 text-[#e6c27a]" />}
+                                                {seg.value === 'Peak' && <Sparkles className="w-3 h-3 text-[#c99d4a]" />}
                                             </h4>
                                             <p className="text-[11px] font-mono text-brand-muted/70 mt-1 uppercase tracking-wider">{seg.speaker}</p>
                                         </div>
@@ -216,15 +211,15 @@ export default function AppWorkspace() {
                                                 <circle cx="18" cy="18" r="16" className="fill-none stroke-brand-border stroke-2" />
                                                 <circle
                                                     cx="18" cy="18" r="16"
-                                                    className={`fill-none stroke-2 stroke-linecap-round ${seg.value === 'Peak' ? 'stroke-[#e6c27a]' : 'stroke-[#9381ff]'}`}
+                                                    className={`fill-none stroke-2 stroke-linecap-round ${seg.value === 'Peak' ? 'stroke-[#c99d4a]' : 'stroke-[#e94a47]'}`}
                                                     style={{ strokeDasharray: 100, strokeDashoffset: 100 - seg.score }}
                                                 />
                                             </svg>
-                                            <span className="text-[10px] font-bold text-white/80">{seg.score}</span>
+                                            <span className="text-[10px] font-bold text-brand-text/80">{seg.score}</span>
                                         </div>
                                     </div>
 
-                                    <p className="font-serif text-[15.5px] leading-relaxed text-[#dcdcdc] mb-5 italic relative z-10 opacity-90 group-hover:opacity-100 transition-opacity">
+                                    <p className="font-serif text-[15.5px] leading-relaxed text-[#ddd8ce] mb-5 italic relative z-10 opacity-90 group-hover:opacity-100 transition-opacity">
                                         "{seg.text}"
                                     </p>
 
@@ -234,8 +229,8 @@ export default function AppWorkspace() {
                                             <Badge text={seg.value} isPeak={seg.value === 'Peak'} />
                                         </div>
 
-                                        <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-brand-border/60 bg-black/20 text-[#a0a0a0] hover:text-white hover:border-[#9381ff]/40 hover:bg-[#9381ff]/10 transition-all text-xs font-medium group/btn">
-                                            <CheckCircle2 className="w-3.5 h-3.5 group-hover/btn:text-[#9381ff] transition-colors" />
+                                        <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-brand-border/60 bg-black/20 text-[#a3a099] hover:text-brand-text hover:border-[#e94a47]/40 hover:bg-[#e94a47]/10 transition-all text-xs font-medium group/btn">
+                                            <CheckCircle2 className="w-3.5 h-3.5 group-hover/btn:text-[#e94a47] transition-colors" />
                                             Add to Arc
                                         </button>
                                     </div>
@@ -245,11 +240,10 @@ export default function AppWorkspace() {
                     </section>
 
                     {/* PANEL C: STORY ARC (The Masterpiece) */}
-                    <section className="w-[35%] bg-brand-bg/60 backdrop-blur-md flex flex-col relative shadow-[inset_20px_0_40px_rgba(0,0,0,0.6)]">
-                        <div className="absolute top-0 right-0 w-[60%] h-[30%] bg-[#e6c27a]/[0.02] rounded-full blur-[100px] pointer-events-none" />
+                    <section className="w-[35%] bg-brand-bg/60 flex flex-col relative">
 
-                        <div className="p-6 pb-4 border-b border-brand-border/40 sticky top-0 bg-[#060608]/80 backdrop-blur-md z-20">
-                            <h3 className="font-serif text-xl tracking-wide text-white/90">Narrative Arc</h3>
+                        <div className="p-6 pb-4 border-b border-brand-border/40 sticky top-0 bg-[#0b0b0c]/80 z-20">
+                            <h3 className="font-serif text-xl tracking-wide text-brand-text/90">Narrative Arc</h3>
                         </div>
 
                         <div className="flex-1 overflow-y-auto px-8 py-10">
@@ -267,19 +261,19 @@ export default function AppWorkspace() {
                                         <div className="flex items-start gap-6 relative z-10">
                                             {/* Timeline Node */}
                                             <div className="relative mt-1 group shrink-0">
-                                                <div className={`w-[30px] h-[30px] rounded-full flex items-center justify-center border border-white/10 bg-[#0a0a0c] transition-transform duration-500 shadow-xl
+                                                <div className={`w-[30px] h-[30px] rounded-full flex items-center justify-center border border-brand-text/10 bg-[#0a0a0c] transition-transform duration-500
                           ${hoveredBeat === beat.id ? 'scale-110' : ''}
                         `}>
-                                                    <div className={`w-2.5 h-2.5 rounded-full shadow-[0_0_10px_currentcolor] transition-colors duration-500
-                            ${beat.isPeak ? 'bg-[#e6c27a] text-[#e6c27a]' : 'bg-[#9381ff]/60 text-[#9381ff] group-hover:bg-[#9381ff]'}
+                                                    <div className={`w-2.5 h-2.5 rounded-full transition-colors duration-500
+                            ${beat.isPeak ? 'bg-[#c99d4a] text-[#c99d4a]' : 'bg-[#e94a47]/60 text-[#e94a47] group-hover:bg-[#e94a47]'}
                           `} />
                                                 </div>
                                             </div>
 
                                             <div className="flex-1 pt-0.5">
                                                 <h4 className={`text-lg font-serif tracking-wide mb-1.5 transition-colors
-                          ${beat.isPeak ? 'text-gradient-gold' : 'text-white/80'}
-                          ${hoveredBeat === beat.id && !beat.isPeak ? '!text-white' : ''}
+                          ${beat.isPeak ? 'text-gradient-gold' : 'text-brand-text/80'}
+                          ${hoveredBeat === beat.id && !beat.isPeak ? '!text-brand-text' : ''}
                         `}>
                                                     {beat.title}
                                                 </h4>
@@ -288,33 +282,33 @@ export default function AppWorkspace() {
                                                 {/* Immersive Drop Zone / Assigned Content */}
                                                 <div className={`
                           min-h-[80px] rounded-xl p-5 flex flex-col gap-3 transition-all duration-300 relative overflow-hidden group/zone cursor-pointer
-                          ${(beat.title === 'Hook' || beat.title === 'Peak') ? 'glass-card border-white/10' : 'border border-dashed border-white/10 bg-white/[0.01] hover:bg-white/[0.03] hover:border-[#9381ff]/30'}
+                          ${(beat.title === 'Hook' || beat.title === 'Peak') ? 'glass-card border-brand-text/10' : 'border border-dashed border-brand-text/10 bg-brand-text/[0.01] hover:bg-brand-text/[0.03] hover:border-[#e94a47]/30'}
                         `}>
                                                     {beat.title === 'Hook' ? (
                                                         <div className="relative z-10">
-                                                            <div className="flex items-center gap-2 mb-2 text-brand-muted group-hover/zone:text-white/60 transition-colors">
+                                                            <div className="flex items-center gap-2 mb-2 text-brand-muted group-hover/zone:text-brand-text/60 transition-colors">
                                                                 <GripVertical className="w-3.5 h-3.5" />
                                                                 <span className="text-[10px] uppercase tracking-wider font-mono">Bride</span>
                                                             </div>
-                                                            <p className="text-[15px] font-serif italic text-white/90 leading-relaxed shadow-sm">
+                                                            <p className="text-[15px] font-serif italic text-brand-text/90 leading-relaxed shadow-sm">
                                                                 "I couldn't breathe until I turned around and saw him..."
                                                             </p>
                                                         </div>
                                                     ) : beat.title === 'Peak' ? (
                                                         <div className="relative z-10">
-                                                            <div className="absolute left-[-20px] top-[-20px] bottom-[-20px] w-1 bg-gradient-to-b from-transparent via-[#e6c27a] to-transparent opacity-50" />
-                                                            <div className="flex items-center gap-2 mb-2 text-[#e6c27a]/60 group-hover/zone:text-[#e6c27a]/80 transition-colors">
+                                                            <div className="absolute left-[-20px] top-[-20px] bottom-[-20px] w-1 bg-gradient-to-b from-transparent via-[#c99d4a] to-transparent opacity-50" />
+                                                            <div className="flex items-center gap-2 mb-2 text-[#c99d4a]/60 group-hover/zone:text-[#c99d4a]/80 transition-colors">
                                                                 <GripVertical className="w-3.5 h-3.5" />
                                                                 <span className="text-[10px] uppercase tracking-wider font-mono">Groom • Peak Moment</span>
                                                             </div>
-                                                            <p className="text-[15px] font-serif italic text-[#f8e5b9] leading-relaxed shadow-sm drop-shadow-[0_0_15px_rgba(230,194,122,0.2)]">
+                                                            <p className="text-[15px] font-serif italic text-[#e8d5ac] leading-relaxed shadow-sm">
                                                                 "I promise to never stop laughing with you, even when things get hard."
                                                             </p>
                                                         </div>
                                                     ) : (
                                                         <div className="flex flex-col items-center justify-center h-full text-center gap-2 opacity-30 group-hover/zone:opacity-60 transition-opacity pb-2 pt-2">
-                                                            <div className="w-8 h-8 rounded-full border border-dashed border-white/40 flex items-center justify-center">
-                                                                <span className="text-white pb-0.5 text-lg">+</span>
+                                                            <div className="w-8 h-8 rounded-full border border-dashed border-brand-text/40 flex items-center justify-center">
+                                                                <span className="text-brand-text pb-0.5 text-lg">+</span>
                                                             </div>
                                                             <span className="text-[11px] uppercase tracking-widest font-mono">Drag Fragment Here</span>
                                                         </div>
@@ -339,15 +333,15 @@ function SidebarIcon({ icon, active, tooltip }: { icon: React.ReactNode, active?
     return (
         <div className="relative group/icon cursor-pointer flex justify-center w-full">
             <div className={`p-2.5 rounded-lg transition-all duration-300
-        ${active ? 'bg-[#9381ff]/15 text-[#b8b0ff] shadow-[inset_0_0_10px_rgba(147,129,255,0.1)]' : 'text-brand-muted/70 hover:bg-white/5 hover:text-white'}
+        ${active ? 'bg-[#e94a47]/15 text-[#f2918f]' : 'text-brand-muted/70 hover:bg-brand-text/5 hover:text-brand-text'}
       `}>
                 {React.cloneElement(icon as React.ReactElement<any>, { className: 'w-5 h-5' })}
             </div>
             {active && (
-                <motion.div layoutId="activeNav" className="absolute -left-0 top-1/2 -translate-y-1/2 w-[3px] h-6 bg-[#9381ff] rounded-r-full shadow-[0_0_10px_#9381ff]" />
+                <motion.div layoutId="activeNav" className="absolute -left-0 top-1/2 -translate-y-1/2 w-[3px] h-6 bg-[#e94a47] rounded-r-full" />
             )}
             {/* Tooltip */}
-            <div className="absolute left-[calc(100%+8px)] top-1/2 -translate-y-1/2 px-2.5 py-1.5 bg-[#171a23] border border-white/10 rounded-md text-[11px] font-medium text-white/90 opacity-0 group-hover/icon:opacity-100 translate-x-[-10px] group-hover/icon:translate-x-0 transition-all pointer-events-none whitespace-nowrap z-50 shadow-xl">
+            <div className="absolute left-[calc(100%+8px)] top-1/2 -translate-y-1/2 px-2.5 py-1.5 bg-[#131315] border border-brand-text/10 rounded-md text-[11px] font-medium text-brand-text/90 opacity-0 group-hover/icon:opacity-100 translate-x-[-10px] group-hover/icon:translate-x-0 transition-all pointer-events-none whitespace-nowrap z-50">
                 {tooltip}
             </div>
         </div>
@@ -358,8 +352,8 @@ function Badge({ text, isPeak }: { text: string, isPeak?: boolean }) {
     return (
         <span className={`px-2 py-1 rounded text-[10px] font-mono tracking-widest uppercase flex items-center border
       ${isPeak
-                ? 'bg-[#e6c27a]/10 text-[#e6c27a] border-[#e6c27a]/20 shadow-[0_0_10px_rgba(230,194,122,0.1)]'
-                : 'bg-black/40 text-brand-muted/80 border-white/5'
+                ? 'bg-[#c99d4a]/10 text-[#c99d4a] border-[#c99d4a]/20'
+                : 'bg-black/40 text-brand-muted/80 border-brand-text/5'
             }
     `}>
             {text}

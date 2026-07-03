@@ -1,73 +1,63 @@
 @import "tailwindcss";
 
+/* Plotline-pulled system — see DESIGN.md at project root.
+   Warm-dark editorial: flat surfaces, hairline borders, one confident red. */
 @theme {
-  --color-brand-bg: #08061a;
-  --color-brand-surface: #100d28;
-  --color-brand-border: rgba(255, 255, 255, 0.16);
-  --color-brand-border-highlight: rgba(255, 255, 255, 0.28);
-  --color-brand-accent: #9381ff;
-  --color-brand-accent-hover: #b8b0ff;
-  --color-brand-peak: #e6c27a;
-  --color-brand-text: #f0f0f0;
-  --color-brand-muted: #88888b;
+  --color-brand-bg: #161618;
+  --color-brand-deep: #0b0b0c;
+  --color-brand-surface: #131315;
+  --color-brand-tint: rgba(245, 242, 236, 0.04);
+  --color-brand-border: rgba(245, 242, 236, 0.1);
+  --color-brand-border-faint: rgba(245, 242, 236, 0.06);
+  --color-brand-border-highlight: rgba(245, 242, 236, 0.2);
+  --color-brand-accent: #e94a47;
+  --color-brand-accent-hover: #f0625f;
+  --color-brand-peak: #c99d4a;
+  --color-brand-text: #f5f2ec;
+  --color-brand-muted: rgba(245, 242, 236, 0.6);
+  --color-brand-ready: #86b48a;
+}
 
-  --font-serif: var(--font-playfair), ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
-  --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+/* Fonts come from next/font variables scoped to <body>, so they must be
+   inlined into the utilities (a :root-emitted var can't see body-scoped vars). */
+@theme inline {
+  --font-serif: var(--font-instrument), "Instrument Serif", ui-serif, Georgia, "Times New Roman", serif;
+  --font-sans: var(--font-geist), Geist, "Inter Tight", ui-sans-serif, system-ui, -apple-system, sans-serif;
 }
 
 body {
   background-color: var(--color-brand-bg);
-  background-image:
-    radial-gradient(ellipse at 10% 0%, rgba(147, 129, 255, 0.45) 0%, transparent 55%),
-    radial-gradient(ellipse at 90% 100%, rgba(230, 194, 122, 0.20) 0%, transparent 55%),
-    radial-gradient(ellipse at 60% 40%, rgba(80, 60, 180, 0.25) 0%, transparent 60%);
   color: var(--color-brand-text);
 }
 
+/* Flat editorial panel (was glassmorphism — Plotline layers with surface
+   tones and hairline borders only: no blur, no shadow). */
 .glass-panel {
-  background: rgba(16, 13, 40, 0.6);
-  backdrop-filter: blur(28px) saturate(180%);
-  -webkit-backdrop-filter: blur(28px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.5);
+  background: var(--color-brand-bg);
+  border: 1px solid var(--color-brand-border-faint);
 }
 
 .glass-card {
-  background: rgba(255, 255, 255, 0.04);
-  backdrop-filter: blur(20px) saturate(160%);
-  -webkit-backdrop-filter: blur(20px) saturate(160%);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  box-shadow:
-    0 8px 32px 0 rgba(0, 0, 0, 0.3),
-    inset 0 1px 1px 0 rgba(255, 255, 255, 0.1);
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  background: var(--color-brand-surface);
+  border: 1px solid var(--color-brand-border);
+  transition: border-color 0.25s ease, background-color 0.25s ease;
 }
 
 .glass-card:hover {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(147, 129, 255, 0.4);
-  transform: translateY(-4px);
-  box-shadow:
-    0 20px 40px -12px rgba(0, 0, 0, 0.5),
-    0 0 20px 0 rgba(147, 129, 255, 0.15),
-    inset 0 1px 1px 0 rgba(255, 255, 255, 0.2);
+  border-color: var(--color-brand-border-highlight);
 }
 
+/* Former gradient-text utilities, now flat per the system's bans.
+   .text-gradient = primary serif headline; .text-gradient-gold = amber note. */
 .text-gradient {
-  background: linear-gradient(180deg, #fff8e7 0%, #d4aa62 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: var(--color-brand-text);
 }
 
 .text-gradient-gold {
-  background: linear-gradient(135deg, #fff3c4 0%, #e6c27a 50%, #b38b36 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: var(--color-brand-peak);
 }
 
-/* Elegant sleek scrollbar */
+/* Slim scrollbar */
 ::-webkit-scrollbar {
   width: 4px;
 }
@@ -77,10 +67,10 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(245, 242, 236, 0.1);
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(245, 242, 236, 0.2);
 }

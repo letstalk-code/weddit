@@ -1,9 +1,14 @@
 import type { Metadata } from 'next';
-import { Inter, Playfair_Display } from 'next/font/google';
+import { Geist, Instrument_Serif } from 'next/font/google';
 import './globals.css';
 
-const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
-const playfair = Playfair_Display({ subsets: ['latin'], variable: '--font-playfair' });
+const geist = Geist({ subsets: ['latin'], variable: '--font-geist' });
+const instrument = Instrument_Serif({
+  subsets: ['latin'],
+  weight: '400',
+  style: ['normal', 'italic'],
+  variable: '--font-instrument',
+});
 
 export const metadata: Metadata = {
   title: 'WEDDIT - Premium Filmmaker Tool',
@@ -17,7 +22,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className="dark">
-      <body className={`${inter.variable} ${playfair.variable} bg-[#0A0B10] text-[#E2E4E9] font-sans antialiased`} style={{ background: '#0A0B10' }}>
+      <body className={`${geist.variable} ${instrument.variable} bg-brand-bg text-brand-text font-sans antialiased`}>
         {children}
       </body>
     </html>

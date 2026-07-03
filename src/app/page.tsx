@@ -49,6 +49,15 @@ function statusLabel(status: ProjectMeta['status']): string {
   return 'Created';
 }
 
+// Status chip tones: sage = done, amber = in flight, red = needs attention,
+// muted = untouched.
+function statusChipClass(status: ProjectMeta['status']): string {
+  if (status === 'ready') return 'bg-[#86b48a]/10 text-[#86b48a] border-[#86b48a]/20';
+  if (status === 'processing') return 'bg-[#c99d4a]/10 text-[#c99d4a] border-[#c99d4a]/20';
+  if (status === 'error') return 'bg-[#e94a47]/10 text-[#e94a47] border-[#e94a47]/20';
+  return 'bg-brand-text/5 text-brand-muted border-brand-text/10';
+}
+
 export default function DashboardPage() {
   const router = useRouter();
   const [projects, setProjects] = useState<ProjectMeta[]>([]);
@@ -81,17 +90,16 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="flex h-screen w-full bg-brand-bg text-white overflow-hidden font-sans">
+    <div className="flex h-screen w-full bg-brand-bg text-brand-text overflow-hidden font-sans">
 
       {/* 1. MINIMAL EXECUTIVE SIDEBAR */}
-      <nav className="w-[72px] glass-panel border-r border-white/[0.05] flex flex-col items-center py-6 gap-8 z-20 shrink-0">
+      <nav className="w-[72px] glass-panel border-r border-brand-text/[0.05] flex flex-col items-center py-6 gap-8 z-20 shrink-0">
         {/* WEDDIT Brand Icon */}
         <motion.div
-          whileHover={{ scale: 1.05, filter: 'brightness(1.15)' }}
-          className="w-10 h-10 rounded-lg bg-gradient-to-br from-[#9381ff] to-[#6a56cc] flex items-center justify-center cursor-pointer shadow-[0_0_20px_rgba(147,129,255,0.35)] relative overflow-hidden"
+          whileHover={{ scale: 1.02 }}
+          className="w-10 h-10 rounded-lg bg-[#e94a47] flex items-center justify-center cursor-pointer relative overflow-hidden"
         >
-          <div className="absolute inset-0 bg-gradient-to-br from-[#e6c27a]/20 to-transparent pointer-events-none" />
-          <span className="font-serif font-bold text-[17px] text-transparent bg-clip-text bg-gradient-to-b from-[#fffaeb] to-[#e0c890] relative z-10 tracking-tight">W</span>
+          <span className="font-serif text-[17px] text-[#f5f2ec] relative z-10 tracking-tight">W</span>
         </motion.div>
 
         <div className="flex flex-col gap-8 mt-4 w-full px-4">
@@ -108,7 +116,6 @@ export default function DashboardPage() {
 
       {/* 2. MAIN DASHBOARD CONTENT */}
       <main className="flex-1 overflow-y-auto overflow-x-hidden relative">
-        <div className="absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-brand-accent/5 to-transparent pointer-events-none" />
 
         <div className="max-w-[1400px] mx-auto p-10 2xl:p-14 pb-20 pt-12 space-y-12 relative z-10">
 
@@ -133,20 +140,20 @@ export default function DashboardPage() {
                 <div className="flex items-center gap-3">
                   {/* Search mock */}
                   <div className="relative group">
-                    <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-white/30 group-focus-within:text-white/60 transition-colors" />
+                    <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-brand-text/30 group-focus-within:text-brand-text/60 transition-colors" />
                     <input
                       type="text"
                       placeholder="Search projects..."
-                      className="glass-panel rounded-md text-sm pl-9 pr-4 py-2 text-white/80 placeholder:text-white/30 focus:outline-none focus:border-white/20 transition-all w-64 border border-white/[0.05]"
+                      className="glass-panel rounded-md text-sm pl-9 pr-4 py-2 text-brand-text/80 placeholder:text-brand-text/30 focus:outline-none focus:border-brand-text/20 transition-all w-64 border border-brand-text/[0.05]"
                     />
                   </div>
                   {/* Sort buttons mock */}
-                  <div className="flex glass-panel rounded-md border border-white/[0.05] p-0.5">
-                    <button className="px-3 py-1.5 text-[13px] bg-[#9381ff]/15 text-[#b8b0ff] font-medium rounded">Date ↓</button>
-                    <button className="px-3 py-1.5 text-[13px] text-white/50 hover:text-white/80 font-medium">Name ↑</button>
+                  <div className="flex glass-panel rounded-md border border-brand-text/[0.05] p-0.5">
+                    <button className="px-3 py-1.5 text-[13px] bg-[#e94a47]/15 text-[#f2918f] font-medium rounded">Date ↓</button>
+                    <button className="px-3 py-1.5 text-[13px] text-brand-text/50 hover:text-brand-text/80 font-medium">Name ↑</button>
                   </div>
                   {/* New Project CTA */}
-                  <button onClick={() => setShowCreate(true)} className="flex items-center gap-2 bg-[#9381ff] hover:bg-[#b8b0ff] text-white px-5 py-2 rounded-md text-sm font-medium transition-all shadow-[0_4px_14px_0_rgba(147,129,255,0.2)]">
+                  <button onClick={() => setShowCreate(true)} className="flex items-center gap-2 bg-[#e94a47] hover:bg-[#f0625f] text-brand-text px-5 py-2 rounded-md text-sm font-medium transition-all">
                     <Plus className="w-4 h-4" /> Create New Project
                   </button>
                 </div>
@@ -155,7 +162,7 @@ export default function DashboardPage() {
               {/* Projects Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {projects.length === 0 && (
-                  <div className="col-span-2 glass-panel rounded-xl p-10 flex flex-col items-center justify-center text-center text-white/40 text-sm gap-3 border border-white/[0.05]">
+                  <div className="col-span-2 glass-panel rounded-xl p-10 flex flex-col items-center justify-center text-center text-brand-text/40 text-sm gap-3 border border-brand-text/[0.05]">
                     <FolderOpen className="w-8 h-8 opacity-40" />
                     <p>No projects yet. Create your first project to get started.</p>
                   </div>
@@ -163,16 +170,14 @@ export default function DashboardPage() {
                 {projects.map((project) => (
                   <Link href={`/workspace/${project.id}`} key={project.id}>
                     <motion.div
-                      variants={itemVariants}
+                      initial="hidden" animate="show" variants={itemVariants}
                       whileHover={{ scale: 1.01 }}
                       className="glass-card rounded-xl p-6 cursor-pointer relative group transition-all duration-300 overflow-hidden"
                     >
-                      {/* Subtle hover gradient sweep */}
-                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#9381ff]/10 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700 ease-in-out pointer-events-none" />
 
                       <div className="flex items-start justify-between mb-8 relative z-10">
                         <div>
-                          <h3 className="text-[17px] font-serif tracking-wide text-white/95 mb-1.5">{project.title}</h3>
+                          <h3 className="text-[17px] font-serif tracking-wide text-brand-text/95 mb-1.5">{project.title}</h3>
                           <div className="flex items-center gap-2 text-[13px] text-brand-muted font-light">
                             <Clock className="w-3.5 h-3.5" />
                             {formatDate(project.createdAt)}
@@ -180,16 +185,16 @@ export default function DashboardPage() {
                         </div>
                         <div className="flex items-center gap-3">
                           {/* Status Pill */}
-                          <div className="flex items-center gap-1.5 bg-[#9381ff]/10 text-[#9381ff] px-2.5 py-1 rounded-full border border-[#9381ff]/20">
+                          <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full border ${statusChipClass(project.status)}`}>
                             <CheckCircle2 className="w-3 h-3" />
                             <span className="text-[11px] font-semibold uppercase tracking-wider">{statusLabel(project.status)}</span>
                           </div>
-                          <button className="text-white/30 hover:text-white/80 transition-colors">
+                          <button className="text-brand-text/30 hover:text-brand-text/80 transition-colors">
                             <MoreVertical className="w-5 h-5" />
                           </button>
                         </div>
                       </div>
-                      <div className="text-[13px] text-white/40 group-hover:text-white/70 transition-colors font-medium relative z-10 flex items-center gap-2">
+                      <div className="text-[13px] text-brand-text/40 group-hover:text-brand-text/70 transition-colors font-medium relative z-10 flex items-center gap-2">
                         View project details <ChevronRight className="w-3 h-3" />
                       </div>
                     </motion.div>
@@ -197,7 +202,7 @@ export default function DashboardPage() {
                 ))}
               </div>
               <div className="pt-2">
-                <button className="bg-brand-surface hover:bg-white/10 text-white/80 px-6 py-2.5 rounded-lg text-sm font-medium transition-colors border border-white/[0.05]">
+                <button className="bg-brand-surface hover:bg-brand-text/10 text-brand-text/80 px-6 py-2.5 rounded-lg text-sm font-medium transition-colors border border-brand-text/[0.05]">
                   View All Projects (5)
                 </button>
               </div>
@@ -210,9 +215,9 @@ export default function DashboardPage() {
             >
               <div className="flex items-center justify-between mb-8">
                 <div className="flex items-center gap-2 font-serif text-gradient font-medium gap-2">
-                  Usage Summary <RefreshCw className="w-4 h-4 text-white/40 cursor-pointer hover:text-white/80" />
+                  Usage Summary <RefreshCw className="w-4 h-4 text-brand-text/40 cursor-pointer hover:text-brand-text/80" />
                 </div>
-                <span className="bg-[#9381ff]/10 text-[#9381ff] text-[11px] px-2 py-0.5 rounded uppercase tracking-wider font-semibold border border-[#9381ff]/20">
+                <span className="bg-[#e94a47]/10 text-[#e94a47] text-[11px] px-2 py-0.5 rounded uppercase tracking-wider font-semibold border border-[#e94a47]/20">
                   Starter Plan
                 </span>
               </div>
@@ -221,27 +226,27 @@ export default function DashboardPage() {
                 {/* Transcription Progress */}
                 <div>
                   <div className="flex justify-between text-[13px] mb-2">
-                    <span className="text-white/80 font-medium flex items-center gap-2"><Clock className="w-3.5 h-3.5 text-[#9381ff]" /> Transcription</span>
-                    <span className="text-white/50">3.0 hours remaining</span>
+                    <span className="text-brand-text/80 font-medium flex items-center gap-2"><Clock className="w-3.5 h-3.5 text-[#e94a47]" /> Transcription</span>
+                    <span className="text-brand-text/50">3.0 hours remaining</span>
                   </div>
-                  <div className="h-[3px] w-full bg-[#1e222d] rounded-full overflow-hidden">
-                    <motion.div initial={{ width: 0 }} animate={{ width: '25%' }} transition={{ duration: 1, delay: 0.4 }} className="h-full bg-[#23b27b] rounded-full" />
+                  <div className="h-[3px] w-full bg-[#1a1a1d] rounded-full overflow-hidden">
+                    <motion.div initial={{ width: 0 }} animate={{ width: '25%' }} transition={{ duration: 1, delay: 0.4 }} className="h-full bg-[#86b48a] rounded-full" />
                   </div>
                 </div>
 
                 {/* Script Generation Progress */}
                 <div>
                   <div className="flex justify-between text-[13px] mb-2">
-                    <span className="text-white/80 font-medium flex items-center gap-2"><FileText className="w-3.5 h-3.5 text-[#9381ff]" /> Script Generation</span>
-                    <span className="text-white/50">5.0 hours remaining</span>
+                    <span className="text-brand-text/80 font-medium flex items-center gap-2"><FileText className="w-3.5 h-3.5 text-[#e94a47]" /> Script Generation</span>
+                    <span className="text-brand-text/50">5.0 hours remaining</span>
                   </div>
-                  <div className="h-[3px] w-full bg-[#1e222d] rounded-full overflow-hidden">
-                    <motion.div initial={{ width: 0 }} animate={{ width: '0%' }} transition={{ duration: 1, delay: 0.5 }} className="h-full bg-[#23b27b] rounded-full" />
+                  <div className="h-[3px] w-full bg-[#1a1a1d] rounded-full overflow-hidden">
+                    <motion.div initial={{ width: 0 }} animate={{ width: '0%' }} transition={{ duration: 1, delay: 0.5 }} className="h-full bg-[#86b48a] rounded-full" />
                   </div>
                 </div>
 
-                <div className="pt-6 border-t border-white/[0.05]">
-                  <h4 className="text-[13px] font-semibold text-white/80 mb-3">Your Plan Includes:</h4>
+                <div className="pt-6 border-t border-brand-text/[0.05]">
+                  <h4 className="text-[13px] font-semibold text-brand-text/80 mb-3">Your Plan Includes:</h4>
                   <ul className="text-[13px] text-[#88888b] space-y-2.5">
                     <li className="flex items-start gap-2">• Up to 4.0 hours/month of AI transcription</li>
                     <li className="flex items-start gap-2">• 5.0 hours/month of story script generation</li>
@@ -253,7 +258,7 @@ export default function DashboardPage() {
                 </div>
               </div>
 
-              <button className="w-full mt-8 bg-[#9381ff] hover:bg-[#b8b0ff] text-white py-3 rounded-md text-sm font-semibold transition-all shadow-[0_4px_14px_0_rgba(147,129,255,0.2)] flex items-center justify-center gap-2">
+              <button className="w-full mt-8 bg-[#e94a47] hover:bg-[#f0625f] text-brand-text py-3 rounded-md text-sm font-semibold transition-all flex items-center justify-center gap-2">
                 <Sparkles className="w-4 h-4" /> Upgrade Plan
               </button>
             </motion.div>
@@ -264,28 +269,28 @@ export default function DashboardPage() {
             <h2 className="text-xl font-serif tracking-wide text-gradient mb-6">Folders</h2>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div className="glass-panel rounded-xl p-6 flex flex-col h-full">
-                <div className="flex items-center gap-2 text-[15px] text-white/60 font-medium mb-6">
-                  <span className="text-[#9381ff]">★</span> Favorite Folders
+                <div className="flex items-center gap-2 text-[15px] text-brand-text/60 font-medium mb-6">
+                  <span className="text-[#e94a47]">★</span> Favorite Folders
                 </div>
-                <div className="flex items-center justify-between text-sm text-white/80 glass-card p-3 rounded-lg hover:bg-white/[0.08] cursor-pointer transition-colors">
-                  <div className="flex items-center gap-3"><FolderOpen className="w-4 h-4 text-white/40" /> All Projects</div>
-                  <span className="text-white/40 font-mono">0</span>
+                <div className="flex items-center justify-between text-sm text-brand-text/80 glass-card p-3 rounded-lg hover:bg-brand-text/[0.08] cursor-pointer transition-colors">
+                  <div className="flex items-center gap-3"><FolderOpen className="w-4 h-4 text-brand-text/40" /> All Projects</div>
+                  <span className="text-brand-text/40 font-mono">0</span>
                 </div>
               </div>
 
               <div className="glass-panel rounded-xl p-6 flex flex-col h-full">
-                <div className="flex items-center gap-2 text-[15px] text-white/60 font-medium mb-6">
-                  <Clock className="w-4 h-4 text-[#9381ff]" /> Recent Folders
+                <div className="flex items-center gap-2 text-[15px] text-brand-text/60 font-medium mb-6">
+                  <Clock className="w-4 h-4 text-[#e94a47]" /> Recent Folders
                 </div>
                 <div className="space-y-2 flex-1">
                   {FOLDERS.map(f => (
-                    <div key={f.id} className="flex items-center justify-between text-sm text-white/80 p-3 rounded-lg border border-transparent hover:glass-card cursor-pointer transition-all">
-                      <div className="flex items-center gap-3"><FolderOpen className="w-4 h-4 text-white/40" /> {f.name}</div>
-                      <span className="text-white/40 font-mono">{f.count}</span>
+                    <div key={f.id} className="flex items-center justify-between text-sm text-brand-text/80 p-3 rounded-lg border border-transparent hover:glass-card cursor-pointer transition-all">
+                      <div className="flex items-center gap-3"><FolderOpen className="w-4 h-4 text-brand-text/40" /> {f.name}</div>
+                      <span className="text-brand-text/40 font-mono">{f.count}</span>
                     </div>
                   ))}
                 </div>
-                <button className="text-[#9381ff] text-sm font-medium mt-4 hover:text-[#b8b0ff] transition-colors self-center">
+                <button className="text-[#e94a47] text-sm font-medium mt-4 hover:text-[#f2918f] transition-colors self-center">
                   View All Folders
                 </button>
               </div>
@@ -303,10 +308,10 @@ export default function DashboardPage() {
                 { num: '3', title: 'Generate & Export', desc: 'Generate a story script and export to your preferred editing software.' }
               ].map((step, i) => (
                 <div key={i} className="glass-card rounded-xl p-6 transition-colors cursor-pointer group">
-                  <div className="w-7 h-7 rounded-full bg-[#9381ff]/10 text-[#9381ff] flex items-center justify-center text-sm font-bold mb-5 border border-[#9381ff]/20 group-hover:bg-[#9381ff] group-hover:text-white transition-colors">
+                  <div className="w-7 h-7 rounded-full bg-[#e94a47]/10 text-[#e94a47] flex items-center justify-center text-sm font-bold mb-5 border border-[#e94a47]/20 group-hover:bg-[#e94a47] group-hover:text-brand-text transition-colors">
                     {step.num}
                   </div>
-                  <h3 className="text-[15px] font-semibold text-white/90 mb-2">{step.title}</h3>
+                  <h3 className="text-[15px] font-semibold text-brand-text/90 mb-2">{step.title}</h3>
                   <p className="text-[#88888b] text-[13px] leading-relaxed">{step.desc}</p>
                 </div>
               ))}
@@ -318,11 +323,11 @@ export default function DashboardPage() {
 
       {/* Create Project Modal */}
       {showCreate && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100]" onClick={() => setShowCreate(false)}>
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[100]" onClick={() => setShowCreate(false)}>
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="glass-card rounded-xl p-8 w-full max-w-md mx-4 shadow-2xl"
+            className="glass-card rounded-xl p-8 w-full max-w-md mx-4"
             onClick={(e) => e.stopPropagation()}
           >
             <h2 className="text-xl font-serif text-gradient mb-6">New Project</h2>
@@ -333,13 +338,13 @@ export default function DashboardPage() {
                 placeholder="Project title…"
                 value={newTitle}
                 onChange={(e) => setNewTitle(e.target.value)}
-                className="w-full glass-panel rounded-md px-4 py-3 text-white/90 placeholder:text-white/30 focus:outline-none border border-white/[0.08] focus:border-[#9381ff]/50 text-sm"
+                className="w-full glass-panel rounded-md px-4 py-3 text-brand-text/90 placeholder:text-brand-text/30 focus:outline-none border border-brand-text/[0.08] focus:border-[#e94a47]/50 text-sm"
               />
               <div className="flex gap-3 justify-end pt-2">
-                <button type="button" onClick={() => setShowCreate(false)} className="px-5 py-2 rounded-md text-sm text-white/60 hover:text-white/90 transition-colors">
+                <button type="button" onClick={() => setShowCreate(false)} className="px-5 py-2 rounded-md text-sm text-brand-text/60 hover:text-brand-text/90 transition-colors">
                   Cancel
                 </button>
-                <button type="submit" disabled={creating || !newTitle.trim()} className="px-5 py-2 bg-[#9381ff] hover:bg-[#b8b0ff] disabled:opacity-50 text-white rounded-md text-sm font-medium transition-all">
+                <button type="submit" disabled={creating || !newTitle.trim()} className="px-5 py-2 bg-[#e94a47] hover:bg-[#f0625f] disabled:opacity-50 text-brand-text rounded-md text-sm font-medium transition-all">
                   {creating ? 'Creating…' : 'Create'}
                 </button>
               </div>
@@ -350,8 +355,8 @@ export default function DashboardPage() {
 
       {/* Absolute floating 'Need help?' button */}
       <div className="absolute bottom-8 right-8 z-50">
-        <button className="glass-panel hover:border-white/[0.2] text-white/80 hover:text-white px-5 py-2.5 rounded-full shadow-2xl flex items-center gap-2 text-sm font-medium transition-all hover:scale-105 border border-white/[0.05]">
-          <PlayCircle className="w-4 h-4 text-[#9381ff]" /> Need help?
+        <button className="glass-panel hover:border-brand-text/[0.2] text-brand-text/80 hover:text-brand-text px-5 py-2.5 rounded-full flex items-center gap-2 text-sm font-medium transition-all hover:scale-105 border border-brand-text/[0.05]">
+          <PlayCircle className="w-4 h-4 text-[#e94a47]" /> Need help?
         </button>
       </div>
 
@@ -364,15 +369,15 @@ function SidebarIcon({ icon, active, tooltip }: { icon: React.ReactNode, active?
   return (
     <div className="relative group/icon cursor-pointer flex justify-center w-full">
       <div className={`p-2.5 rounded-lg transition-all duration-300
-        ${active ? 'bg-[#9381ff]/10 text-[#9381ff]' : 'text-[#88888b] hover:bg-white/5 hover:text-white/90'}
+        ${active ? 'bg-[#e94a47]/10 text-[#e94a47]' : 'text-[#88888b] hover:bg-brand-text/5 hover:text-brand-text/90'}
       `}>
         {React.cloneElement(icon as React.ReactElement<any>, { className: 'w-5 h-5' })}
       </div>
       {active && (
-        <motion.div layoutId="activeMainSideNav" className="absolute -left-0 top-1/2 -translate-y-1/2 w-[3px] h-6 bg-[#9381ff] rounded-r-full shadow-[0_0_10px_#9381ff]" />
+        <motion.div layoutId="activeMainSideNav" className="absolute -left-0 top-1/2 -translate-y-1/2 w-[3px] h-6 bg-[#e94a47] rounded-r-full" />
       )}
       {/* Tooltip */}
-      <div className="absolute left-[calc(100%+8px)] top-1/2 -translate-y-1/2 px-2.5 py-1.5 bg-[#171a23] border border-white/10 rounded-md text-[11px] font-medium text-white/90 opacity-0 group-hover/icon:opacity-100 translate-x-[-10px] group-hover/icon:translate-x-0 transition-all pointer-events-none whitespace-nowrap z-50 shadow-xl">
+      <div className="absolute left-[calc(100%+8px)] top-1/2 -translate-y-1/2 px-2.5 py-1.5 bg-[#131315] border border-brand-text/10 rounded-md text-[11px] font-medium text-brand-text/90 opacity-0 group-hover/icon:opacity-100 translate-x-[-10px] group-hover/icon:translate-x-0 transition-all pointer-events-none whitespace-nowrap z-50">
         {tooltip}
       </div>
     </div>

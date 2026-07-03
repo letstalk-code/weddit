@@ -96,7 +96,7 @@ function ProcessingProgress({
   if (foundIdx === -1) {
     return (
       <div className="flex flex-col items-center justify-center h-40 gap-3 text-brand-muted">
-        <Loader2 className="w-6 h-6 animate-spin text-[#9381ff]" />
+        <Loader2 className="w-6 h-6 animate-spin text-[#e94a47]" />
         <span className="text-xs tracking-wider uppercase">Processing audio…</span>
         {elapsedLabel && <span className="text-[11px] text-brand-muted/70 font-mono">{elapsedLabel}</span>}
       </div>
@@ -108,9 +108,9 @@ function ProcessingProgress({
   return (
     <div className="flex flex-col gap-5 py-4">
       <div className="flex items-center gap-3">
-        <Loader2 className="w-5 h-5 animate-spin text-[#9381ff] shrink-0" />
+        <Loader2 className="w-5 h-5 animate-spin text-[#e94a47] shrink-0" />
         <div className="flex flex-col">
-          <span className="text-sm text-white/85">{current.label}…</span>
+          <span className="text-sm text-brand-text/85">{current.label}…</span>
           <span className="text-[11px] text-brand-muted">
             Step {idx + 1} of {PROCESSING_STAGES.length}
           </span>
@@ -119,13 +119,13 @@ function ProcessingProgress({
 
       {/* Elapsed time + audio length */}
       <div className="flex items-center gap-2 text-[11px] font-mono text-brand-muted/80">
-        {elapsedLabel && <span className="text-white/60">{elapsedLabel}</span>}
+        {elapsedLabel && <span className="text-brand-text/60">{elapsedLabel}</span>}
         {elapsedLabel && audioLabel && <span className="text-brand-muted/40">·</span>}
         {audioLabel && <span>{audioLabel}</span>}
       </div>
-      <div className="w-full bg-white/5 rounded-full h-1.5 overflow-hidden">
+      <div className="w-full bg-brand-text/5 rounded-full h-1.5 overflow-hidden">
         <motion.div
-          className="bg-[#9381ff] h-1.5 rounded-full"
+          className="bg-[#e94a47] h-1.5 rounded-full"
           initial={{ width: 0 }}
           animate={{ width: `${pct}%` }}
           transition={{ duration: 0.5 }}
@@ -135,13 +135,13 @@ function ProcessingProgress({
         {PROCESSING_STAGES.map((s, i) => (
           <li key={s.key} className="flex items-center gap-2.5 text-[12px]">
             {i < idx ? (
-              <CheckCircle2 className="w-3.5 h-3.5 text-[#6fdfb8] shrink-0" />
+              <CheckCircle2 className="w-3.5 h-3.5 text-[#86b48a] shrink-0" />
             ) : i === idx ? (
-              <Loader2 className="w-3.5 h-3.5 animate-spin text-[#9381ff] shrink-0" />
+              <Loader2 className="w-3.5 h-3.5 animate-spin text-[#e94a47] shrink-0" />
             ) : (
-              <div className="w-3.5 h-3.5 rounded-full border border-white/15 shrink-0" />
+              <div className="w-3.5 h-3.5 rounded-full border border-brand-text/15 shrink-0" />
             )}
-            <span className={i <= idx ? 'text-white/70' : 'text-brand-muted/50'}>{s.label}</span>
+            <span className={i <= idx ? 'text-brand-text/70' : 'text-brand-muted/50'}>{s.label}</span>
           </li>
         ))}
       </ol>
@@ -149,7 +149,7 @@ function ProcessingProgress({
   )
 }
 
-const SPEAKER_COLORS = ['text-[#e6c27a]', 'text-[#9381ff]', 'text-[#6fdfb8]', 'text-[#f08080]']
+const SPEAKER_COLORS = ['text-[#c99d4a]', 'text-[#e94a47]', 'text-[#86b48a]', 'text-[#f08080]']
 
 function speakerColor(speaker: string, allSpeakers: string[]): string {
   const idx = allSpeakers.indexOf(speaker)
@@ -548,12 +548,10 @@ export default function WorkspacePage() {
   // ── Render ────────────────────────────────────────────────────────────────────
 
   return (
-    <div className="flex h-screen w-full bg-brand-bg text-brand-text overflow-hidden font-sans selection:bg-[#9381ff]/40 selection:text-white relative">
+    <div className="flex h-screen w-full bg-brand-bg text-brand-text overflow-hidden font-sans selection:bg-[#e94a47]/40 selection:text-brand-text relative">
 
       {/* Background ambient */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-[#9381ff]/5 rounded-full blur-[100px]" />
-        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-[#e6c27a]/5 rounded-full blur-[120px]" />
       </div>
 
       {/* Hidden audio element used for moment previews + Play Story */}
@@ -567,16 +565,15 @@ export default function WorkspacePage() {
       />
 
       {/* SIDEBAR */}
-      <nav className="w-[68px] glass-panel border-r-0 border-brand-border/50 flex flex-col items-center py-6 gap-8 z-20 shrink-0 shadow-2xl relative">
+      <nav className="w-[68px] glass-panel border-r-0 border-brand-border/50 flex flex-col items-center py-6 gap-8 z-20 shrink-0 relative">
         <div className="absolute inset-y-0 right-0 w-px bg-gradient-to-b from-transparent via-brand-border to-transparent opacity-50" />
         <Link href="/" aria-label="Back to dashboard" title="Back to dashboard">
           <motion.div
-            whileHover={{ scale: 1.05, filter: 'brightness(1.15)' }}
-            className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#9381ff] to-[#6a56cc] flex items-center justify-center shadow-[0_0_20px_rgba(147,129,255,0.3)] cursor-pointer relative group overflow-hidden"
+            whileHover={{ scale: 1.02 }}
+            className="w-10 h-10 rounded-xl bg-[#e94a47] flex items-center justify-center cursor-pointer relative group overflow-hidden"
           >
-            <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-[#e6c27a]/20 to-transparent pointer-events-none" />
-            <div className="absolute inset-0 rounded-xl ring-1 ring-white/20 group-hover:ring-white/40 transition-all pointer-events-none" />
-            <span className="font-serif font-bold text-[17px] text-transparent bg-clip-text bg-gradient-to-b from-[#fffaeb] to-[#e0c890] relative z-10 tracking-tight">W</span>
+            <div className="absolute inset-0 rounded-xl ring-1 ring-brand-text/20 group-hover:ring-brand-text/40 transition-all pointer-events-none" />
+            <span className="font-serif text-[17px] text-[#f5f2ec] relative z-10 tracking-tight">W</span>
           </motion.div>
         </Link>
         <div className="flex flex-col gap-8 mt-6">
@@ -592,14 +589,14 @@ export default function WorkspacePage() {
       <div className="flex flex-col flex-1 relative z-10 overflow-hidden">
 
         {/* HEADER */}
-        <header className="h-[72px] glass-panel flex items-center justify-between px-8 z-20 shrink-0 shadow-lg relative border-b-0 border-brand-border/40">
+        <header className="h-[72px] glass-panel flex items-center justify-between px-8 z-20 shrink-0 relative border-b-0 border-brand-border/40">
           <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-brand-border to-transparent opacity-50" />
           <div className="flex items-center gap-6">
             <div>
               <div className="flex items-center gap-2 mb-1">
                 <h1 className="text-[10px] font-bold tracking-[0.2em] uppercase text-brand-muted/80">WEDDIT</h1>
                 <ChevronRight className="w-3 h-3 text-brand-muted/50" />
-                <span className="text-[10px] font-medium tracking-widest uppercase text-[#9381ff]/90 flex items-center gap-1.5 bg-[#9381ff]/10 px-2 py-0.5 rounded-full border border-[#9381ff]/20">
+                <span className="text-[10px] font-medium tracking-widest uppercase text-[#e94a47]/90 flex items-center gap-1.5 bg-[#e94a47]/10 px-2 py-0.5 rounded-full border border-[#e94a47]/20">
                   <Sparkles className="w-2.5 h-2.5" />
                   {isProcessing ? 'Processing…' : status === 'ready' ? 'Analyzed' : status === 'error' ? 'Error' : 'Ready'}
                 </span>
@@ -623,7 +620,7 @@ export default function WorkspacePage() {
                         : key === 'story' ? 'More spoken moments — let the words carry the story'
                           : 'A balanced mix'
                     }
-                    className={`px-2.5 py-1 text-[11px] font-medium transition-colors disabled:opacity-40 ${storyStyle === key ? 'bg-[#9381ff]/25 text-[#b8b0ff]' : 'text-brand-muted hover:text-white/80 hover:bg-white/5'}`}
+                    className={`px-2.5 py-1 text-[11px] font-medium transition-colors disabled:opacity-40 ${storyStyle === key ? 'bg-[#e94a47]/10 text-[#e94a47]' : 'text-brand-muted hover:text-brand-text/80 hover:bg-brand-text/5'}`}
                   >
                     {label}
                   </button>
@@ -643,9 +640,9 @@ export default function WorkspacePage() {
                 onChange={(e) => setTargetMinutes(Number(e.target.value))}
                 disabled={generating}
                 title={`Target highlight length: ${targetMinutes} min`}
-                className="w-24 accent-[#9381ff] cursor-pointer disabled:opacity-40"
+                className="w-24 accent-[#e94a47] cursor-pointer disabled:opacity-40"
               />
-              <span className="text-xs font-mono text-white/70 w-12 tabular-nums">{targetMinutes} min</span>
+              <span className="text-xs font-mono text-brand-text/70 w-12 tabular-nums">{targetMinutes} min</span>
             </div>
 
             {/* Generate Story button */}
@@ -654,11 +651,11 @@ export default function WorkspacePage() {
               whileTap={{ scale: 0.98 }}
               onClick={handleGenerateStory}
               disabled={generating || segments.length === 0}
-              className="group relative flex items-center gap-2 bg-[#9381ff]/20 hover:bg-[#9381ff]/30 text-white px-4 py-2.5 rounded-lg text-sm font-medium transition-all border border-[#9381ff]/30 disabled:opacity-40 disabled:cursor-not-allowed"
+              className="group relative flex items-center gap-2 bg-[#e94a47] hover:bg-[#f0625f] text-white px-5 py-2.5 rounded-md text-sm font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
             >
               {generating
-                ? <Loader2 className="w-4 h-4 animate-spin text-[#9381ff]" />
-                : <Sparkles className="w-4 h-4 text-[#9381ff]" />
+                ? <Loader2 className="w-4 h-4 animate-spin" />
+                : <Sparkles className="w-4 h-4" />
               }
               Generate Story
             </motion.button>
@@ -668,10 +665,9 @@ export default function WorkspacePage() {
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               onClick={() => { window.location.href = `/api/projects/${id}/export` }}
-              className="group relative flex items-center gap-2.5 bg-[#171a23] hover:bg-[#1d212c] text-white px-6 py-2.5 rounded-lg text-sm font-medium transition-all shadow-[0_4px_14px_0_rgba(0,0,0,0.4)] border border-brand-border-highlight overflow-hidden"
+              className="group relative flex items-center gap-2.5 bg-[#131315] hover:bg-[#1a1a1d] text-brand-text px-6 py-2.5 rounded-lg text-sm font-medium transition-all border border-brand-border-highlight overflow-hidden"
             >
-              <div className="absolute inset-0 bg-gradient-to-r from-[#e6c27a]/0 via-[#e6c27a]/10 to-[#e6c27a]/0 opacity-0 group-hover:opacity-100 translate-x-[-100%] group-hover:translate-x-[100%] transition-all duration-1000 ease-in-out pointer-events-none" />
-              <Download className="w-4 h-4 text-[#e6c27a] group-hover:text-white transition-colors z-10 relative" />
+              <Download className="w-4 h-4 text-[#c99d4a] group-hover:text-brand-text transition-colors z-10 relative" />
               <span className="relative z-10 flex items-center gap-2">
                 Export to FCP <span className="text-brand-muted text-xs border border-brand-border px-1.5 py-0.5 rounded bg-black/40"><Command className="w-3 h-3 inline pb-0.5" /> E</span>
               </span>
@@ -683,10 +679,10 @@ export default function WorkspacePage() {
         <main className="flex flex-1 overflow-hidden relative">
 
           {/* PANEL A: TRANSCRIPT */}
-          <section className="w-[30%] border-r border-brand-border/40 bg-[#0a0a0c]/80 flex flex-col relative z-10 backdrop-blur-3xl">
+          <section className="w-[30%] border-r border-brand-border/40 bg-[#131315] flex flex-col relative z-10">
             <div className="p-6 pb-4 border-b border-brand-border/40 glass-panel sticky top-0 z-20">
               <div className="flex items-center justify-between mb-6">
-                <h3 className="font-serif text-xl tracking-wide text-white/90">Source Script</h3>
+                <h3 className="font-serif text-xl tracking-wide text-brand-text/90">Source Script</h3>
                 <span className="text-[10px] font-mono tracking-widest text-brand-muted uppercase">
                   {transcriptBlocks.length > 0 ? `${transcriptBlocks.length} blocks` : 'No audio'}
                 </span>
@@ -699,7 +695,7 @@ export default function WorkspacePage() {
                     initial={{ height: '10%' }}
                     animate={{ height: `${Math.max(10, Math.sin(i * 0.4) * 40 + (isProcessing ? 30 : 55))}%` }}
                     transition={{ repeat: Infinity, repeatType: 'mirror', duration: 1.5 + (i % 3) * 0.3, ease: 'easeInOut' }}
-                    className={`flex-1 rounded-t-sm ${isProcessing ? 'bg-[#9381ff]/30' : 'bg-brand-muted/40'}`}
+                    className={`flex-1 rounded-t-sm ${isProcessing ? 'bg-[#e94a47]/30' : 'bg-brand-muted/40'}`}
                   />
                 ))}
               </div>
@@ -727,16 +723,16 @@ export default function WorkspacePage() {
                     onClick={() => !uploading && fileInputRef.current?.click()}
                     onDragOver={(e) => e.preventDefault()}
                     onDrop={(e) => { e.preventDefault(); const f = e.dataTransfer.files?.[0]; if (f && !uploading) handleUpload(f) }}
-                    whileHover={{ borderColor: 'rgba(147,129,255,0.5)', backgroundColor: 'rgba(147,129,255,0.05)' }}
-                    className="border-2 border-dashed border-white/10 rounded-xl p-8 flex flex-col items-center gap-4 cursor-pointer transition-all bg-white/[0.02]"
+                    whileHover={{ borderColor: 'rgba(233,74,71,0.5)', backgroundColor: 'rgba(233,74,71,0.05)' }}
+                    className="border-2 border-dashed border-brand-text/10 rounded-xl p-8 flex flex-col items-center gap-4 cursor-pointer transition-all bg-brand-text/[0.02]"
                   >
                     {uploading ? (
                       <>
-                        <Loader2 className="w-8 h-8 animate-spin text-[#9381ff]" />
+                        <Loader2 className="w-8 h-8 animate-spin text-[#e94a47]" />
                         <span className="text-sm text-brand-muted tracking-wide">Uploading… {uploadProgress}%</span>
-                        <div className="w-full bg-white/5 rounded-full h-1.5 overflow-hidden">
+                        <div className="w-full bg-brand-text/5 rounded-full h-1.5 overflow-hidden">
                           <motion.div
-                            className="bg-[#9381ff] h-1.5 rounded-full"
+                            className="bg-[#e94a47] h-1.5 rounded-full"
                             initial={{ width: 0 }}
                             animate={{ width: `${uploadProgress}%` }}
                             transition={{ duration: 0.3 }}
@@ -745,11 +741,11 @@ export default function WorkspacePage() {
                       </>
                     ) : (
                       <>
-                        <div className="w-14 h-14 rounded-full bg-[#9381ff]/10 border border-[#9381ff]/20 flex items-center justify-center">
-                          <Upload className="w-6 h-6 text-[#9381ff]" />
+                        <div className="w-14 h-14 rounded-full bg-[#e94a47]/10 border border-[#e94a47]/20 flex items-center justify-center">
+                          <Upload className="w-6 h-6 text-[#e94a47]" />
                         </div>
                         <div className="text-center">
-                          <p className="text-sm font-medium text-white/80 mb-1">Select Wedding Audio</p>
+                          <p className="text-sm font-medium text-brand-text/80 mb-1">Select Wedding Audio</p>
                           <p className="text-xs text-brand-muted">Drag & drop or click to browse</p>
                           <p className="text-[10px] text-brand-muted/50 mt-2 uppercase tracking-widest">mp3 • wav • m4a • mp4</p>
                         </div>
@@ -777,7 +773,7 @@ export default function WorkspacePage() {
                       {block.speaker}
                     </span>
                   </div>
-                  <p className="text-[15px] leading-[1.8] font-sans font-light text-brand-muted group-hover:text-white/70 transition-all duration-300">
+                  <p className="text-[15px] leading-[1.8] font-sans font-light text-brand-muted group-hover:text-brand-text/70 transition-all duration-300">
                     &ldquo;{block.text}&rdquo;
                   </p>
                 </div>
@@ -786,12 +782,11 @@ export default function WorkspacePage() {
           </section>
 
           {/* PANEL B: SEGMENTS */}
-          <section className="w-[35%] border-r border-brand-border/40 bg-[#0c0c0f]/60 flex flex-col relative z-0 backdrop-blur-xl">
-            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(147,129,255,0.02),transparent_50%)] pointer-events-none" />
+          <section className="w-[35%] border-r border-brand-border/40 bg-[#101012] flex flex-col relative z-0">
 
-            <div className="p-6 pb-4 flex items-center justify-between z-10 sticky top-0 border-b border-white/[0.02]">
+            <div className="p-6 pb-4 flex items-center justify-between z-10 sticky top-0 border-b border-brand-text/[0.02]">
               <div className="flex items-center gap-3">
-                <h3 className="font-serif text-xl tracking-wide text-white/90">Moments</h3>
+                <h3 className="font-serif text-xl tracking-wide text-brand-text/90">Moments</h3>
                 <span className="bg-brand-surface border border-brand-border px-2 py-0.5 rounded-full text-[10px] text-brand-muted">
                   {segments.length} Found
                 </span>
@@ -806,7 +801,7 @@ export default function WorkspacePage() {
             >
               {isProcessing && (
                 <div className="flex flex-col items-center justify-center h-40 gap-3 text-brand-muted">
-                  <Loader2 className="w-6 h-6 animate-spin text-[#9381ff]" />
+                  <Loader2 className="w-6 h-6 animate-spin text-[#e94a47]" />
                   <span className="text-xs tracking-wider uppercase">Analyzing moments…</span>
                 </div>
               )}
@@ -823,26 +818,26 @@ export default function WorkspacePage() {
                 return (
                   <motion.div
                     key={seg.id}
-                    variants={itemVariants}
+                    initial="hidden" animate="show" variants={itemVariants}
                     onClick={() => setActiveSegment(seg.id)}
                     className={`glass-card p-5 rounded-xl cursor-pointer relative overflow-hidden group transition-all duration-500
                       ${isActive
-                        ? 'border-[#9381ff]/40 shadow-[0_8px_30px_rgba(147,129,255,0.08)] bg-[#9381ff]/[0.02]'
-                        : 'hover:border-white/20 hover:shadow-[0_8px_30px_rgba(0,0,0,0.5)]'
+                        ? 'border-[#e94a47]/40 bg-[#e94a47]/[0.02]'
+                        : 'hover:border-brand-text/20 '
                       }`}
                   >
                     {isActive && (
                       <motion.div
                         layoutId="activeSegmentHighlight"
-                        className="absolute inset-0 bg-gradient-to-br from-[#9381ff]/10 to-transparent pointer-events-none"
+                        className="absolute inset-0 bg-[#e94a47]/[0.04] pointer-events-none"
                       />
                     )}
 
                     <div className="flex justify-between items-start mb-4 relative z-10">
                       <div>
-                        <h4 className={`text-sm tracking-wide font-medium flex items-center gap-2 ${isPeak ? 'text-gradient-gold' : 'text-white/90'}`}>
+                        <h4 className={`text-sm tracking-wide font-medium flex items-center gap-2 ${isPeak ? 'text-gradient-gold' : 'text-brand-text/90'}`}>
                           {seg.text.slice(0, 30)}{seg.text.length > 30 ? '…' : ''}
-                          {isPeak && <Sparkles className="w-3 h-3 text-[#e6c27a]" />}
+                          {isPeak && <Sparkles className="w-3 h-3 text-[#c99d4a]" />}
                         </h4>
                         <p className="text-[11px] font-mono text-brand-muted/70 mt-1 uppercase tracking-wider">{seg.speaker}</p>
                       </div>
@@ -853,15 +848,15 @@ export default function WorkspacePage() {
                           <circle cx="18" cy="18" r="16" className="fill-none stroke-brand-border stroke-2" />
                           <circle
                             cx="18" cy="18" r="16"
-                            className={`fill-none stroke-2 stroke-linecap-round ${isPeak ? 'stroke-[#e6c27a]' : 'stroke-[#9381ff]'}`}
+                            className={`fill-none stroke-2 stroke-linecap-round ${isPeak ? 'stroke-[#c99d4a]' : 'stroke-[#e94a47]'}`}
                             style={{ strokeDasharray: 100, strokeDashoffset: 100 - score }}
                           />
                         </svg>
-                        <span className="text-[10px] font-bold text-white/80">{score}</span>
+                        <span className="text-[10px] font-bold text-brand-text/80">{score}</span>
                       </div>
                     </div>
 
-                    <p className="font-serif text-[15.5px] leading-relaxed text-[#dcdcdc] mb-5 italic relative z-10 opacity-90 group-hover:opacity-100 transition-opacity">
+                    <p className="font-serif text-[15.5px] leading-relaxed text-[#ddd8ce] mb-5 italic relative z-10 opacity-90 group-hover:opacity-100 transition-opacity">
                       &ldquo;{seg.text}&rdquo;
                     </p>
 
@@ -871,7 +866,7 @@ export default function WorkspacePage() {
                           onClick={(e) => { e.stopPropagation(); toggleSegment(seg) }}
                           disabled={!audioUrl}
                           title={audioUrl ? 'Preview this moment' : 'Audio unavailable'}
-                          className="w-7 h-7 rounded-full flex items-center justify-center border border-[#9381ff]/30 bg-[#9381ff]/10 text-[#9381ff] hover:bg-[#9381ff]/20 transition-all disabled:opacity-30 disabled:cursor-not-allowed shrink-0"
+                          className="w-7 h-7 rounded-full flex items-center justify-center border border-[#e94a47]/30 bg-[#e94a47]/10 text-[#e94a47] hover:bg-[#e94a47]/20 transition-all disabled:opacity-30 disabled:cursor-not-allowed shrink-0"
                         >
                           {playingSegId === seg.id ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5 ml-0.5" />}
                         </button>
@@ -886,9 +881,9 @@ export default function WorkspacePage() {
                             e.stopPropagation()
                             setArcDropdown(arcDropdown === seg.id ? null : seg.id)
                           }}
-                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-brand-border/60 bg-black/20 text-[#a0a0a0] hover:text-white hover:border-[#9381ff]/40 hover:bg-[#9381ff]/10 transition-all text-xs font-medium group/btn"
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-brand-border/60 bg-black/20 text-[#a3a099] hover:text-brand-text hover:border-[#e94a47]/40 hover:bg-[#e94a47]/10 transition-all text-xs font-medium group/btn"
                         >
-                          <CheckCircle2 className="w-3.5 h-3.5 group-hover/btn:text-[#9381ff] transition-colors" />
+                          <CheckCircle2 className="w-3.5 h-3.5 group-hover/btn:text-[#e94a47] transition-colors" />
                           Add to Arc
                         </button>
 
@@ -898,7 +893,7 @@ export default function WorkspacePage() {
                               initial={{ opacity: 0, y: -4 }}
                               animate={{ opacity: 1, y: 0 }}
                               exit={{ opacity: 0, y: -4 }}
-                              className="absolute bottom-full right-0 mb-1 bg-[#13141a] border border-brand-border rounded-lg overflow-hidden shadow-xl z-30 min-w-[130px]"
+                              className="absolute bottom-full right-0 mb-1 bg-[#131315] border border-brand-border rounded-lg overflow-hidden z-30 min-w-[130px]"
                             >
                               {(['Hook', 'Build', 'Peak', 'Resolve'] as const).map((beatName) => (
                                 <button
@@ -907,7 +902,7 @@ export default function WorkspacePage() {
                                     e.stopPropagation()
                                     handleAddToArc(seg.id, beatName)
                                   }}
-                                  className="w-full text-left px-4 py-2 text-sm text-brand-muted hover:text-white hover:bg-[#9381ff]/10 transition-colors"
+                                  className="w-full text-left px-4 py-2 text-sm text-brand-muted hover:text-brand-text hover:bg-[#e94a47]/10 transition-colors"
                                 >
                                   {beatName}
                                 </button>
@@ -924,12 +919,11 @@ export default function WorkspacePage() {
           </section>
 
           {/* PANEL C: NARRATIVE ARC */}
-          <section className="w-[35%] bg-brand-bg flex flex-col relative shadow-[inset_20px_0_40px_rgba(0,0,0,0.6)]">
-            <div className="absolute top-0 right-0 w-[60%] h-[30%] bg-[#e6c27a]/[0.02] rounded-full blur-[100px] pointer-events-none" />
+          <section className="w-[35%] bg-brand-bg flex flex-col relative">
 
-            <div className="p-6 pb-4 border-b border-brand-border/40 sticky top-0 bg-[#060608]/80 backdrop-blur-md z-20 flex items-center justify-between">
+            <div className="p-6 pb-4 border-b border-brand-border/40 sticky top-0 bg-[#0b0b0c] z-20 flex items-center justify-between">
               <div>
-                <h3 className="font-serif text-xl tracking-wide text-white/90">Narrative Arc</h3>
+                <h3 className="font-serif text-xl tracking-wide text-brand-text/90">Narrative Arc</h3>
                 {assignedSegs.length > 0 && (
                   <span className="text-[11px] text-brand-muted font-mono">
                     ~{(assembledSec / 60).toFixed(1)} min · {assignedSegs.length} moments
@@ -940,7 +934,7 @@ export default function WorkspacePage() {
                 onClick={() => (isPlaying ? stopPlayback() : playStory())}
                 disabled={!audioUrl || !storyHasSegments}
                 title={!storyHasSegments ? 'Generate a story first' : !audioUrl ? 'Audio unavailable' : 'Play the arranged story'}
-                className="flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all border border-[#9381ff]/30 bg-[#9381ff]/10 text-[#b8b0ff] hover:bg-[#9381ff]/20 disabled:opacity-30 disabled:cursor-not-allowed"
+                className="flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all border border-[#e94a47]/30 bg-[#e94a47]/10 text-[#f2918f] hover:bg-[#e94a47]/20 disabled:opacity-30 disabled:cursor-not-allowed"
               >
                 {isPlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
                 {isPlaying ? 'Stop' : 'Play Story'}
@@ -972,13 +966,13 @@ export default function WorkspacePage() {
                       <div className="flex items-start gap-6 relative z-10">
                         {/* Timeline node */}
                         <div className="relative mt-1 group shrink-0">
-                          <div className={`w-[30px] h-[30px] rounded-full flex items-center justify-center border border-white/10 bg-[#0a0a0c] transition-transform duration-500 shadow-xl ${hoveredBeat === beatName ? 'scale-110' : ''}`}>
-                            <div className={`w-2.5 h-2.5 rounded-full shadow-[0_0_10px_currentcolor] transition-colors duration-500 ${isPeak ? 'bg-[#e6c27a] text-[#e6c27a]' : 'bg-[#9381ff]/60 text-[#9381ff] group-hover:bg-[#9381ff]'}`} />
+                          <div className={`w-[30px] h-[30px] rounded-full flex items-center justify-center border border-brand-text/10 bg-[#0a0a0c] transition-transform duration-500 ${hoveredBeat === beatName ? 'scale-110' : ''}`}>
+                            <div className={`w-2.5 h-2.5 rounded-full transition-colors duration-500 ${isPeak ? 'bg-[#c99d4a] text-[#c99d4a]' : 'bg-[#e94a47]/60 text-[#e94a47] group-hover:bg-[#e94a47]'}`} />
                           </div>
                         </div>
 
                         <div className="flex-1 pt-0.5">
-                          <h4 className={`text-lg font-serif tracking-wide mb-1.5 transition-colors ${isPeak ? 'text-gradient-gold' : 'text-white/80'} ${hoveredBeat === beatName && !isPeak ? '!text-white' : ''}`}>
+                          <h4 className={`text-lg font-serif tracking-wide mb-1.5 transition-colors ${isPeak ? 'text-gradient-gold' : 'text-brand-text/80'} ${hoveredBeat === beatName && !isPeak ? '!text-brand-text' : ''}`}>
                             {beatName}
                           </h4>
                           <p className="text-[13px] text-brand-muted/70 mb-5 font-light">{beatDesc[beatName]}</p>
@@ -989,35 +983,35 @@ export default function WorkspacePage() {
                               {assignedSegments.map((seg) => (
                                 <div
                                   key={seg.id}
-                                  className={`glass-card rounded-xl p-5 relative overflow-hidden ${isPeak ? 'border-[#e6c27a]/20' : ''}`}
+                                  className={`glass-card rounded-xl p-5 relative overflow-hidden ${isPeak ? 'border-[#c99d4a]/20' : ''}`}
                                 >
                                   {isPeak && (
-                                    <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-transparent via-[#e6c27a] to-transparent opacity-50" />
+                                    <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-transparent via-[#c99d4a] to-transparent opacity-50" />
                                   )}
                                   <div className="flex items-center gap-2 mb-2 text-brand-muted">
                                     <GripVertical className="w-3.5 h-3.5" />
-                                    <span className={`text-[10px] uppercase tracking-wider font-mono ${isPeak ? 'text-[#e6c27a]/60' : ''}`}>
+                                    <span className={`text-[10px] uppercase tracking-wider font-mono ${isPeak ? 'text-[#c99d4a]/60' : ''}`}>
                                       {seg.speaker}
                                     </span>
                                     <button
                                       onClick={(e) => { e.stopPropagation(); toggleSegment(seg) }}
                                       disabled={!audioUrl}
                                       title={audioUrl ? 'Preview this moment' : 'Audio unavailable'}
-                                      className={`ml-auto w-6 h-6 rounded-full flex items-center justify-center border transition-all disabled:opacity-30 disabled:cursor-not-allowed shrink-0 ${isPeak ? 'border-[#e6c27a]/40 bg-[#e6c27a]/10 text-[#e6c27a] hover:bg-[#e6c27a]/20' : 'border-[#9381ff]/30 bg-[#9381ff]/10 text-[#9381ff] hover:bg-[#9381ff]/20'}`}
+                                      className={`ml-auto w-6 h-6 rounded-full flex items-center justify-center border transition-all disabled:opacity-30 disabled:cursor-not-allowed shrink-0 ${isPeak ? 'border-[#c99d4a]/40 bg-[#c99d4a]/10 text-[#c99d4a] hover:bg-[#c99d4a]/20' : 'border-[#e94a47]/30 bg-[#e94a47]/10 text-[#e94a47] hover:bg-[#e94a47]/20'}`}
                                     >
                                       {playingSegId === seg.id ? <Pause className="w-3 h-3" /> : <Play className="w-3 h-3 ml-0.5" />}
                                     </button>
                                   </div>
-                                  <p className={`text-[15px] font-serif italic leading-relaxed ${isPeak ? 'text-[#f8e5b9] drop-shadow-[0_0_15px_rgba(230,194,122,0.2)]' : 'text-white/90'}`}>
+                                  <p className={`text-[15px] font-serif italic leading-relaxed ${isPeak ? 'text-[#e8d5ac]' : 'text-brand-text/90'}`}>
                                     &ldquo;{seg.text}&rdquo;
                                   </p>
                                 </div>
                               ))}
                             </div>
                           ) : (
-                            <div className="min-h-[80px] rounded-xl p-5 border border-dashed border-white/10 bg-white/[0.01] hover:bg-white/[0.03] hover:border-[#9381ff]/30 transition-all duration-300 flex flex-col items-center justify-center gap-2 opacity-30 hover:opacity-60 cursor-pointer">
-                              <div className="w-8 h-8 rounded-full border border-dashed border-white/40 flex items-center justify-center">
-                                <span className="text-white pb-0.5 text-lg">+</span>
+                            <div className="min-h-[80px] rounded-xl p-5 border border-dashed border-brand-text/10 bg-brand-text/[0.01] hover:bg-brand-text/[0.03] hover:border-[#e94a47]/30 transition-all duration-300 flex flex-col items-center justify-center gap-2 opacity-30 hover:opacity-60 cursor-pointer">
+                              <div className="w-8 h-8 rounded-full border border-dashed border-brand-text/40 flex items-center justify-center">
+                                <span className="text-brand-text pb-0.5 text-lg">+</span>
                               </div>
                               <span className="text-[11px] uppercase tracking-widest font-mono">Drag Fragment Here</span>
                             </div>
@@ -1042,13 +1036,13 @@ export default function WorkspacePage() {
 function SidebarIcon({ icon, active, tooltip }: { icon: React.ReactNode; active?: boolean; tooltip: string }) {
   return (
     <div className="relative group/icon cursor-pointer flex justify-center w-full">
-      <div className={`p-2.5 rounded-lg transition-all duration-300 ${active ? 'bg-[#9381ff]/15 text-[#b8b0ff] shadow-[inset_0_0_10px_rgba(147,129,255,0.1)]' : 'text-brand-muted/70 hover:bg-white/5 hover:text-white'}`}>
+      <div className={`p-2.5 rounded-lg transition-all duration-300 ${active ? 'bg-[#e94a47]/15 text-[#f2918f]' : 'text-brand-muted/70 hover:bg-brand-text/5 hover:text-brand-text'}`}>
         {React.cloneElement(icon as React.ReactElement<{ className?: string }>, { className: 'w-5 h-5' })}
       </div>
       {active && (
-        <motion.div layoutId="activeNav" className="absolute -left-0 top-1/2 -translate-y-1/2 w-[3px] h-6 bg-[#9381ff] rounded-r-full shadow-[0_0_10px_#9381ff]" />
+        <motion.div layoutId="activeNav" className="absolute -left-0 top-1/2 -translate-y-1/2 w-[3px] h-6 bg-[#e94a47] rounded-r-full" />
       )}
-      <div className="absolute left-[calc(100%+8px)] top-1/2 -translate-y-1/2 px-2.5 py-1.5 bg-[#171a23] border border-white/10 rounded-md text-[11px] font-medium text-white/90 opacity-0 group-hover/icon:opacity-100 translate-x-[-10px] group-hover/icon:translate-x-0 transition-all pointer-events-none whitespace-nowrap z-50 shadow-xl">
+      <div className="absolute left-[calc(100%+8px)] top-1/2 -translate-y-1/2 px-2.5 py-1.5 bg-[#131315] border border-brand-text/10 rounded-md text-[11px] font-medium text-brand-text/90 opacity-0 group-hover/icon:opacity-100 translate-x-[-10px] group-hover/icon:translate-x-0 transition-all pointer-events-none whitespace-nowrap z-50">
         {tooltip}
       </div>
     </div>
@@ -1057,7 +1051,7 @@ function SidebarIcon({ icon, active, tooltip }: { icon: React.ReactNode; active?
 
 function Badge({ text, isPeak }: { text: string; isPeak?: boolean }) {
   return (
-    <span className={`px-2 py-1 rounded text-[10px] font-mono tracking-widest uppercase flex items-center border ${isPeak ? 'bg-[#e6c27a]/10 text-[#e6c27a] border-[#e6c27a]/20 shadow-[0_0_10px_rgba(230,194,122,0.1)]' : 'bg-black/40 text-brand-muted/80 border-white/5'}`}>
+    <span className={`px-2 py-1 rounded text-[10px] font-mono tracking-widest uppercase flex items-center border ${isPeak ? 'bg-[#c99d4a]/10 text-[#c99d4a] border-[#c99d4a]/20' : 'bg-black/40 text-brand-muted/80 border-brand-text/5'}`}>
       {text}
     </span>
   )
