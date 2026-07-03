@@ -151,6 +151,21 @@ end-to-end against a dev server. Two things I could NOT do and you must:
       timeout in worker.py AND `STUCK_JOB_MS` in the status route together
       (keep watchdog > worker timeout).
 
+## Restyle (2026-07-03) — Plotline aesthetic
+
+- [x] Pulled plotline.pro's design system from the live site (computed styles +
+      screenshots) into `DESIGN.md` (project root + designsystem skill library
+      under `plotline/`). Aesthetic only — no copy/logo/imagery taken.
+- [x] Rebuilt the theme to it: warm-dark palette (#161618 / #131315 / #f5f2ec),
+      red #e94a47 accent, Instrument Serif + Geist, flat panels with hairline
+      borders. Removed all glassmorphism, gradient text, glows, and blobs.
+      NOTE: `.glass-panel` / `.glass-card` class names remain in markup but are
+      redefined as flat surfaces in globals.css — rename later if confusing.
+- [x] Fixed latent framer-motion bug (cards mounting after parent animation
+      stayed opacity-0 forever) that A3's slower list fetch exposed.
+- [x] Gotcha for future font work: font tokens must live in `@theme inline`
+      (not plain `@theme`) because next/font vars are body-scoped.
+
 ## P2 — Product polish (the Plotline-feel gap)
 
 - [ ] Implement drag & drop for the arc (UI already advertises "Drag Fragment
