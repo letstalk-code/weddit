@@ -138,6 +138,7 @@ def transcribe_with_deepgram(audio_url: str) -> dict:
         'diarize': 'true',
         'punctuate': 'true',
         'smart_format': 'true',
+        'paragraphs': 'true',  # gives clean sentence boundaries for moments
         'language': 'en',
     }
     response = requests.post(
@@ -175,7 +176,59 @@ def parse_deepgram_words(payload: dict) -> list:
     return words
 
 
-# ── Segment building + scoring (unchanged logic) ─────────────────────────────
+# ── Segment building from Deepgram sentences (complete-thought moments) ──────
+
+def build_segments_from_paragraphs(payload: dict) -> list:
+    channels = payload.get('results', {}).get('channels', [])
+    if not channels:
+        return []
+    alternatives = channels[0].get('alternatives', [])
+    if not alternatives:
+        return []
+    paragraphs = (alternatives[0].get('paragraphs') or {}).get('paragraphs') or []
+    segments = []
+    for para in paragraphs:
+        speaker_idx = para.get('speaker')
+        speaker = f'Speaker {speaker_idx}' if speaker_idx is not None else 'Speaker 0'
+        for sentence in para.get('sentences', []):
+            text = (sentence.get('text') or '').strip()
+            if not text:
+                continue
+            start_ms = int(float(sentence.get('start', 0)) * 1000)
+            end_ms = int(float(sentence.get('end', 0)) * 1000)
+            segments.append(make_segment(text, start_ms, end_ms, speaker))
+    return segments
+
+
+def make_segment(text: str, start_ms: int, end_ms: int, speaker: str) -> dict:
+    import uuid
+    tokens = text.split()
+    return {
+        'id': uuid.uuid4().hex,
+        'start_ms': start_ms,
+        'end_ms': end_ms,
+        'speaker': speaker,
+        'text': text,
+        'emotion_score': calculate_emotion(text, len(tokens)),
+        'story_score': calculate_story(text),
+        'clarity_score': calculate_clarity_text(tokens, (end_ms - start_ms) / 1000),
+    }
+
+
+def calculate_clarity_text(tokens: list, duration_sec: float) -> float:
+    fillers = {'uh', 'um', 'like'}
+    normalized = [t.strip(".?!,").lower() for t in tokens]
+    filler_count = sum(1 for t in normalized if t in fillers)
+    ratio = (filler_count / max(len(tokens), 1)) * 100
+    penalty = 0
+    if duration_sec < 3:
+        penalty += 10
+    if duration_sec > 40:
+        penalty += 10
+    return clamp(100 - ratio - penalty)
+
+
+# ── Word-based fallback segmentation (used only if no paragraphs returned) ────
 
 def build_segments(words: list) -> list:
     groups = []
@@ -301,8 +354,12 @@ def _run_process_project(project_id: str) -> None:
         words = parse_deepgram_words(payload)
         duration_sec = payload.get('metadata', {}).get('duration')
         update_meta_stage(s3, bucket, project_id, 'analyzing', audio_duration_sec=duration_sec)
+        # Prefer clean sentence-level moments; fall back to word grouping if needed.
+        segments = build_segments_from_paragraphs(payload)
+        if not segments:
+            segments = build_segments(words)
         write_json(s3, bucket, output_key(project_id, 'transcript'), {'words': words})
-        write_json(s3, bucket, output_key(project_id, 'segments'), build_segments(words))
+        write_json(s3, bucket, output_key(project_id, 'segments'), segments)
         update_meta_status(s3, bucket, project_id, 'ready')
     except Exception as exc:
         print(f'Failed to process project {project_id}:', exc)

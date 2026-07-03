@@ -80,16 +80,32 @@ function styleHint(style: StoryStyle): string {
   return 'This is a balanced highlight: mix emotional peaks with enough narrative context.'
 }
 
-function buildArrangementPrompt(segments: Segment[], targetSeconds: number, style: StoryStyle): string {
+function buildCurationPrompt(segments: Segment[], targetSeconds: number, style: StoryStyle): string {
+  const minutes = Math.round(targetSeconds / 60)
   const list = segments
     .map((s, i) => `[${i + 1}] ${s.speaker} (${Math.round(segDurationSec(s))}s): "${s.text}"`)
     .join('\n')
-  return `You are arranging moments for a wedding highlight film of about ${Math.round(targetSeconds / 60)} minutes. ${styleHint(style)}
-Each moment below is numbered. Arrange ALL ${segments.length} moments into a four-beat narrative arc: Hook (grab attention), Build (establish characters and context), Peak (the emotional climax), Resolve (the closing thought). Every moment number from 1 to ${segments.length} must appear in exactly one beat. Include at least one moment in each beat, and order the numbers within each beat for the best narrative flow.
-Moments:
+  return `You are an award-winning wedding film editor building a roughly ${minutes}-minute highlight reel from the full transcript below. ${styleHint(style)}
+
+CRITICAL RULE — exclude song lyrics and music: The transcript may contain lines that are actually song lyrics from music playing during the ceremony or reception (NOT a person speaking to the couple or guests). These often read as poetic, rhythmic, or repetitive lines that don't fit a toast, vow, speech, or officiant remark. NEVER select these. Only select genuine SPOKEN moments — vows, toasts, speeches, officiant remarks, heartfelt direct address. If a line looks like it could be from a song, leave it out. This applies to every beat, especially the Hook/opening.
+
+Your job is to CURATE — choose the genuinely spoken moments that together tell the most emotionally compelling, coherent story, then arrange them into a four-beat arc:
+- Hook: a strong SPOKEN opening line that immediately draws the viewer in (never a song lyric)
+- Build: establishes the people, relationship, and context
+- Peak: the emotional climax — the most moving moments
+- Resolve: a closing thought that lands the story
+
+Selection guidance:
+- Choose for genuine emotional resonance, vivid or specific storytelling, and a satisfying arc — not just keywords.
+- Prefer complete thoughts; skip filler, false starts, rambling, repetition, fragments that don't stand alone, and anything that reads like song lyrics.
+- Vary speakers and themes where it strengthens the story.
+- Aim for the selected moments' combined length (durations shown in seconds) to total about ${minutes} minutes. You do NOT need to use every moment — leaving weak moments out makes a better film.
+- Put at least one moment in each beat and order moments within each beat for the best emotional flow.
+
+Transcript moments (numbered, in chronological order):
 ${list}
 
-Return ONLY this JSON (no markdown, no explanation), using the moment NUMBERS:
+Return ONLY this JSON (no markdown, no commentary), listing the moment NUMBERS you select for each beat:
 {"beats":[{"name":"Hook","indices":[...]},{"name":"Build","indices":[...]},{"name":"Peak","indices":[...]},{"name":"Resolve","indices":[...]}]}`
 }
 
@@ -143,25 +159,66 @@ function fallbackStory(selected: Segment[]): Story {
   return { beats }
 }
 
+// Trim the weakest moments until the highlight is within ~10% of the target
+// duration, so the length slider is respected. Never empties a beat.
+function trimToTarget(
+  story: Story,
+  segments: Segment[],
+  targetSeconds: number,
+  style: StoryStyle,
+): Story {
+  const map = new Map(segments.map((s) => [s.id, s]))
+  const dur = (id: string) => {
+    const s = map.get(id)
+    return s ? (s.end_ms - s.start_ms) / 1000 : 0
+  }
+  const score = (id: string) => {
+    const s = map.get(id)
+    return s ? weightedScore(s, style) : 0
+  }
+  const beats = story.beats.map((b) => ({ name: b.name, segment_ids: [...b.segment_ids] }))
+  const totalDur = () => beats.reduce((a, b) => a + b.segment_ids.reduce((x, id) => x + dur(id), 0), 0)
+  const limit = targetSeconds * 1.1
+
+  let total = totalDur()
+  while (total > limit) {
+    let worst: { bi: number; ii: number; id: string; sc: number } | null = null
+    beats.forEach((b, bi) => {
+      if (b.segment_ids.length <= 1) return // keep at least one moment per beat
+      b.segment_ids.forEach((id, ii) => {
+        const sc = score(id)
+        if (!worst || sc < worst.sc) worst = { bi, ii, id, sc }
+      })
+    })
+    if (!worst) break
+    total -= dur((worst as { id: string }).id)
+    beats[(worst as { bi: number }).bi].segment_ids.splice((worst as { ii: number }).ii, 1)
+  }
+  return { beats }
+}
+
 export async function generateStory(
   segments: Segment[],
   targetSeconds = 180,
   style: StoryStyle = 'balanced',
 ): Promise<Story> {
-  const selected = selectForTarget(segments, targetSeconds, style)
-  if (selected.length === 0) {
+  if (segments.length === 0) {
     return { beats: BEAT_NAMES.map((name) => ({ name, segment_ids: [] })) }
   }
-  const userPrompt = buildArrangementPrompt(selected, targetSeconds, style)
-  // Output is just small index numbers, so the token budget stays modest.
-  const maxTokens = Math.min(8192, 800 + selected.length * 10)
+  // Give Claude a broad candidate pool to curate from (capped for token safety,
+  // by style relevance), presented in chronological order so it sees the timeline.
+  const ranked = [...segments].sort((a, b) => weightedScore(b, style) - weightedScore(a, style))
+  const candidates = ranked.slice(0, 400).sort((a, b) => a.start_ms - b.start_ms)
+
+  const userPrompt = buildCurationPrompt(candidates, targetSeconds, style)
+  const maxTokens = 4096
   const retryPrompt =
     userPrompt + '\n\nIMPORTANT: Respond with ONLY the JSON object described above, nothing else.'
 
   // Each attempt covers both the API call AND parsing/assembly, so a malformed
   // response triggers a retry. After two failures, fall back deterministically.
   const attempt = async (prompt: string): Promise<Story> =>
-    assembleStory(await callClaude(prompt, maxTokens), selected)
+    trimToTarget(assembleStory(await callClaude(prompt, maxTokens), candidates), segments, targetSeconds, style)
 
   try {
     return await attempt(userPrompt)
@@ -169,7 +226,12 @@ export async function generateStory(
     try {
       return await attempt(retryPrompt)
     } catch {
-      return fallbackStory(selected)
+      return trimToTarget(
+        fallbackStory(selectForTarget(candidates, targetSeconds, style)),
+        segments,
+        targetSeconds,
+        style,
+      )
     }
   }
 }

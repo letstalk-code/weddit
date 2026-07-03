@@ -10,6 +10,7 @@ function escapeXml(value: string): string {
 
 interface Marker {
   start_ms: number
+  end_ms: number
   value: string
   note: string
 }
@@ -21,15 +22,29 @@ function buildMarkers(beats: StoryBeat[], segMap: Map<string, Segment>): Marker[
       const seg = segMap.get(id)
       if (!seg) continue
       const label = escapeXml(`${beat.name}: ${seg.text.slice(0, 40)}`)
-      markers.push({ start_ms: seg.start_ms, value: label, note: beat.name })
+      markers.push({ start_ms: seg.start_ms, end_ms: seg.end_ms, value: label, note: beat.name })
     }
   }
   return markers.sort((a, b) => a.start_ms - b.start_ms)
 }
 
+// Expand each moment into an IN marker (its label) and an OUT marker (where the
+// cut ends), so editors can see exactly where to start AND end each clip.
+function expandInOut(markers: Marker[]): { ms: number; value: string; note: string }[] {
+  const out: { ms: number; value: string; note: string }[] = []
+  for (const m of markers) {
+    if (m.start_ms < 0) continue
+    out.push({ ms: m.start_ms, value: `▸ ${m.value}`, note: m.note })
+    if (typeof m.end_ms === 'number' && m.end_ms > m.start_ms) {
+      out.push({ ms: m.end_ms, value: '◂ end', note: m.note })
+    }
+  }
+  return out.sort((a, b) => a.ms - b.ms)
+}
+
 function renderMarkers(markers: Marker[]): string {
-  return markers
-    .map((m) => `<marker start="${m.start_ms}/1000s" value="${m.value}" note="${m.note}" completed="0"/>`)
+  return expandInOut(markers)
+    .map((m) => `<marker start="${m.ms}/1000s" value="${m.value}" note="${m.note}" completed="0"/>`)
     .join('\n')
 }
 
@@ -65,6 +80,7 @@ export function topSegmentMarkers(segments: Segment[], limit = 25): Marker[] {
     .slice(0, limit)
     .map((s) => ({
       start_ms: s.start_ms,
+      end_ms: s.end_ms,
       value: escapeXml(`★${Math.round(s.story_score)} ${s.text.slice(0, 40)}`),
       note: 'Best moment',
     }))
@@ -78,12 +94,12 @@ export function beatMarkers(beats: StoryBeat[], segments: Segment[]): Marker[] {
 
 function renderStandaloneMarkers(markers: Marker[], durationMs: number): string {
   const maxFrames = Math.max(1, Math.round((durationMs / 1000) * FPS))
-  return markers
-    .filter((m) => m.start_ms >= 0)
+  // Each moment becomes an IN marker (label) and an OUT marker (end of the cut).
+  return expandInOut(markers)
     .map((m) => {
       // Clamp so no marker sits at or past the clip end (Final Cut rejects that).
-      const frames = Math.min(maxFrames - 1, Math.round((m.start_ms / 1000) * FPS))
-      const start = `${Math.max(0, frames) * 100}/3000s`
+      const frames = Math.min(maxFrames - 1, Math.max(0, Math.round((m.ms / 1000) * FPS)))
+      const start = `${frames * 100}/3000s`
       return `            <marker start="${start}" duration="${FRAME_DURATION}" value="${m.value}" note="${m.note}"/>`
     })
     .join('\n')
