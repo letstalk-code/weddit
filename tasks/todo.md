@@ -255,10 +255,20 @@ Generated a real export for "Katelin and Bryce" and validated it:
       the asset name, media-rep src, and clip name. Projects uploaded before
       this fall back to audio.<ext>. Verified both paths against live data,
       then restored the test data.
-- [ ] **Phase 2 — local "prep" CLI (the mechanical half).** Python on the Mac:
-      scan footage folder, drop junk takes, multicam-sync by audio correlation,
-      emit an FCPXML with synced angles + keyword-tagged clips. Uses only what
-      is already installed.
+- [x] **Phase 2 — local "prep" CLI — DONE 2026-09-11.** `prep/weddit_prep.py`
+      (scan / sync / build) + `prep/README.md`. ffmpeg + numpy/scipy only, no
+      new deps. Verified on synthetic fixtures with planted defects: a 3.5s
+      camera offset was recovered as exactly +3.500s, all 3 junk clips
+      rejected, FCPXML validates 0 errors. Being local it knows absolute paths,
+      so it emits real file:// URLs — Final Cut links with no relinking at all.
+      Bug found + fixed while testing: freezedetect only emits freeze_duration
+      when a freeze ENDS, so a take frozen to the very end (camera left
+      running — the commonest junk take) scored zero frozen time and passed.
+      STILL OPEN, carried forward:
+        * sync offsets are computed but NOT applied to the timeline yet —
+          build lays a stringout; real <mc-clip> multicam angles are next
+        * no shake detection (this ffmpeg build lacks vidstabdetect)
+        * never run on a real wedding card, only synthetic fixtures
 - [ ] **Phase 3 — semantic clip sorting (the hard half).** Only after Phase 2
       proves out. Vision model over sampled frames -> wedding moment labels.
 - [ ] **Phase 4 — bridge.** Land Weddit's story beats as markers on the synced
