@@ -434,7 +434,8 @@ export default function WorkspacePage() {
         body: JSON.stringify({
           fileType: 'audio',
           contentType: file.type || 'audio/mpeg',
-          extension
+          extension,
+          filename: file.name
         }),
       })
 

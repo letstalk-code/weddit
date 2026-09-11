@@ -23,21 +23,28 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
       // no story generated yet — top moments are used
     }
 
-    // Locate the uploaded audio so the FCPXML references the right filename.
-    let audioFilename = 'audio.mp3'
-    for (const ext of AUDIO_EXTENSIONS) {
-      if (await objectExists(`projects/${id}/uploads/audio.${ext}`)) {
-        audioFilename = `audio.${ext}`
-        break
-      }
-    }
-
+    // Read meta once: project title + the original upload filename. Final Cut
+    // relinks by FILENAME, so emitting the user's real filename lets it
+    // auto-match on import instead of prompting for every export.
     let projectTitle = 'Weddit Export'
+    let originalFilename: string | undefined
     try {
       const meta = await getJson<ProjectMeta>(`projects/${id}/meta.json`)
       if (meta?.title) projectTitle = meta.title
+      originalFilename = meta?.originalFilename
     } catch {
-      // fall back to default title
+      // fall back to defaults
+    }
+
+    // Projects uploaded before we tracked the filename fall back to the key name.
+    let audioFilename = originalFilename ?? 'audio.mp3'
+    if (!originalFilename) {
+      for (const ext of AUDIO_EXTENSIONS) {
+        if (await objectExists(`projects/${id}/uploads/audio.${ext}`)) {
+          audioFilename = `audio.${ext}`
+          break
+        }
+      }
     }
 
     const durationMs = Math.max(...segments.map((s) => s.end_ms), 1000)

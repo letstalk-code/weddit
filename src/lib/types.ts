@@ -7,6 +7,9 @@ export interface ProjectMeta {
   stage?: ProcessingStage
   startedAt?: number
   audioDurationSec?: number
+  /** Original filename as uploaded. Final Cut relinks by filename, so the
+   *  FCPXML export emits this instead of the internal `audio.<ext>` key. */
+  originalFilename?: string
   createdAt: number
   updatedAt: number
 }

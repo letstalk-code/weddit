@@ -187,3 +187,83 @@ end-to-end against a dev server. Two things I could NOT do and you must:
 - [x] Deleted `/workspace` (no-id) hardcoded mock page (2026-07-03).
 - [x] Lint clean (2026-07-03): all 17 errors cleared (typed `any`s, escaped
       entity; most lived in the deleted mock page).
+
+---
+
+# Hailo Studio evaluation + plan (2026-09-11) — AWAITING APPROVAL
+
+## What Hailo actually is (verified from hailo.studio)
+- **Mac-only NATIVE desktop app.** Their words: "Trimming, stability checks and
+  speech all run on your own Mac, and nothing about a face is written to disk
+  or sent to us." Footage is never uploaded.
+- Does: sorts every clip by moment, drops unusable takes, trims shaky sections,
+  syncs multicam, exports an organised timeline to Premiere / Resolve / FCP.
+- Pricing: **Edit $69/mo** (5 hr analysis ≈ 2 weddings), Studio $99 (adds CRM +
+  delivery galleries), Pro $199. Takes ≥10 min skip analysis entirely.
+- "Blueprint builds" is metered per tier but is NOT publicly documented —
+  genuine unknown.
+
+## The load-bearing finding
+The gap is **architecture, not features**. Weddit is a Next.js web app on
+Vercel (uploads audio to R2, processes on Modal). Hailo is a local Mac app doing
+frame-level video analysis. You cannot card-offload or shake-detect 500GB of
+wedding footage from a serverless function. Weddit being audio-only is not a
+bug — it is the ceiling of the web architecture.
+=> "Make Weddit do that" = a platform migration, not a feature sprint.
+
+## What's actually buildable (checked on this Mac, 2026-09-11)
+ffmpeg 9.0.1 + scipy are installed and already cover most of the mechanical work:
+- junk takes        -> blackdetect, freezedetect      INSTALLED
+- dead air          -> silencedetect                  INSTALLED
+- clip boundaries   -> scdet                          INSTALLED
+- exposure/focus    -> signalstats                    INSTALLED
+- multicam sync     -> scipy FFT cross-correlation    INSTALLED
+- shake detection   -> vidstabdetect  NOT in this build; or OpenCV optical flow
+                       (opencv NOT installed). Both installable.
+Genuinely hard: "sort every clip by moment" (semantic wedding-moment
+classification) needs a vision model over sampled frames.
+Already ours: the speech/ceremony story half — Weddit does this today.
+
+## FCPXML export — VERIFIED TODAY (closes the oldest open risk)
+Generated a real export for "Katelin and Bryce" and validated it:
+- **VALID, 0 errors**, 98 markers, correct timecodes + beat labels.
+- WARN: FCPXML version 1.10 is old.
+- WARN: asset has no source path -> forces a manual relink on every import.
+
+## Proposed plan
+- [ ] **Phase 0 — buy one month of Hailo Edit ($69) and run ONE real past
+      wedding through it.** Cheapest possible de-risking: it tells us whether
+      auto sort/sync/trim actually saves time on OUR footage, and its exported
+      timeline becomes the literal spec for anything we build. Do this BEFORE
+      writing code.
+- [x] **Phase 1 — DONE 2026-09-11, but smaller than planned.** Read the
+      validator's source (fcp_mcp/fcpxml/validator.py) before acting — BOTH
+      warnings turned out to be validator bugs, not defects in our file:
+        * "Old FCPXML version": it does `float(doc.version) < 1.6`, so "1.10"
+          parses as 1.1. Real FCPXML goes 1.9 -> 1.10 -> 1.13, so our 1.10 is
+          NEWER than the 1.6 it wants. Bumping would not silence it
+          (1.13 < 1.6 too). LEFT AT 1.10 deliberately — do not "fix" this.
+        * "no source path": the parser only reads `src` on <asset> and never
+          looks inside <media-rep> — even though that same package's own
+          generator writes it there, commented "required by FCPXML v1.10+
+          DTD". It warns about files it generates itself. Our placement is
+          correct.
+      The one REAL problem was that upload discarded the original filename
+      (everything became audio.<ext>), and Final Cut relinks BY FILENAME — so
+      it could never auto-match. Fixed: presign now records the original
+      filename (directory stripped) into meta.json, and the export emits it as
+      the asset name, media-rep src, and clip name. Projects uploaded before
+      this fall back to audio.<ext>. Verified both paths against live data,
+      then restored the test data.
+- [ ] **Phase 2 — local "prep" CLI (the mechanical half).** Python on the Mac:
+      scan footage folder, drop junk takes, multicam-sync by audio correlation,
+      emit an FCPXML with synced angles + keyword-tagged clips. Uses only what
+      is already installed.
+- [ ] **Phase 3 — semantic clip sorting (the hard half).** Only after Phase 2
+      proves out. Vision model over sampled frames -> wedding moment labels.
+- [ ] **Phase 4 — bridge.** Land Weddit's story beats as markers on the synced
+      multicam timeline from Phase 2.
+
+## Architecture decision to confirm
+Weddit stays a web app for story/speech work. The prep tool is a SEPARATE local
+CLI. Do not try to make the Vercel app ingest video.
