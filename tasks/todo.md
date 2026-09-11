@@ -267,3 +267,61 @@ Generated a real export for "Katelin and Bryce" and validated it:
 ## Architecture decision to confirm
 Weddit stays a web app for story/speech work. The prep tool is a SEPARATE local
 CLI. Do not try to make the Vercel app ingest video.
+
+## Hailo architecture — CRACKED (2026-09-11, verbatim from hailo.studio/faq)
+
+It is NOT fully local. It is a hybrid, and the split is the whole blueprint:
+
+ON THE MAC (their words):
+- "Your original camera files stay on your machine. We never upload your rushes."
+- "Trimming, focus and stability checks, recognizing the couple and
+   transcribing speech all run on your machine."
+- "Recognizing the couple means measuring face geometry... nothing about a face
+   is written to disk or sent to us."
+
+SENT TO THEIR CLOUD (their words):
+- "To sort your clips by moment, Hailo sends a few small still images from each
+   clip, and on some runs a low-resolution copy of a clip, to its analysis
+   service."
+
+=> THE KEY UNLOCK: the hard semantic part ("sort by moment") is a CLOUD VISION
+   CALL ON A FEW SMALL JPEGs PER CLIP. Nobody runs a vision model on 500GB of
+   rushes. They solved the "footage is too big to upload" problem by uploading
+   sampled stills + occasional low-res proxies.
+
+This makes the Weddit version far cheaper than "build a native Mac app":
+
+| Job                     | Hailo          | Weddit would use                     |
+|-------------------------|----------------|--------------------------------------|
+| trim / focus / shake    | local Mac      | ffmpeg (already installed)           |
+| multicam sync           | local Mac      | scipy FFT correlation (installed)    |
+| transcription           | local Mac      | Deepgram (Weddit already does this)  |
+| recognise the couple    | local, face geo| local face embeddings (optional)     |
+| **sort clips by moment**| **cloud vision on stills** | **Claude vision on stills — Weddit's existing cloud** |
+| story beats             | (their "builds")| Weddit already does this, wedding-tuned |
+
+REVISED SPLIT (supersedes the earlier "must become a Mac app" conclusion):
+- LOCAL: a small Python CLI that walks the footage folder and emits sampled
+  stills, extracted audio, cheap ffmpeg metrics, and multicam offsets. Only
+  this part must touch the big files.
+- CLOUD: Weddit as it exists, plus one new step — classify moments from the
+  sampled stills. No native Mac app required; no vision model on-device.
+
+TWO THINGS TO KNOW BEFORE PAYING THEM:
+1. "Blueprint" (metered on every pricing tier today) does NOT ship until
+   2026-10-14. It is: "Start from a finished film's cuts, song and pacing, and
+   refill every cut from a wedding you have already analyzed." Style/structure
+   transfer from a finished film. Billed for now, shipping later.
+2. The homepage reads as fully-private; the FAQ is where it says stills and
+   sometimes low-res copies of client clips DO leave the machine. Disclosed,
+   but worth knowing for client confidentiality.
+
+STILL UNVERIFIED (needs the app installed):
+- Which transcription engine runs locally (whisper.cpp? Apple Speech?)
+- Whether they bundle ffmpeg
+- Which cloud vision model backs the analysis service
+- Whether it is native Swift or Electron
+  => Read Hailo.app/Contents (Info.plist, Frameworks, Resources) and the
+     open-source ACKNOWLEDGEMENTS/licenses screen, which OSS licences legally
+     require them to publish. That is where the real answer is. Not going to
+     decompile their proprietary code — the attributions give the useful 90%.
