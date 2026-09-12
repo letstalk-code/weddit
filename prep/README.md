@@ -17,6 +17,7 @@ No pip install needed.
 ```bash
 python3 prep/weddit_prep.py scan  /Volumes/CARD/wedding      # inventory + junk
 python3 prep/weddit_prep.py sync  /Volumes/CARD/wedding      # multicam offsets
+python3 prep/weddit_prep.py label /Volumes/CARD/wedding      # sort clips by moment
 python3 prep/weddit_prep.py build /Volumes/CARD/wedding -o timeline.fcpxml
 ```
 
@@ -46,6 +47,27 @@ with a confidence ratio; matches below `--min-confidence` (default 6.0) are
 reported as failed rather than silently trusted — clips that never overlapped
 in time cannot sync, and a wrong offset is worse than none.
 
+## Sorting clips by moment (`label`)
+
+The one step that talks to a network. It pulls 3 small JPEGs from each usable
+clip, downscales them to 512px, and asks a model which wedding moment it is —
+`getting ready`, `first look`, `ceremony`, `speeches`, `first dance`,
+`cake cutting`, `exit`, and so on. The label lands in the plan and becomes an
+FCPXML keyword, so clips arrive in Final Cut already sorted.
+
+**What leaves your Mac: a handful of downscaled stills. Never the footage.**
+Rejected takes are never sent at all, so junk costs nothing. Run with
+`--dry-run` to see exactly how many stills and how many KB would be sent
+without sending anything.
+
+Defaults to Haiku 4.5 because a wedding card is hundreds of clips. If labels
+come back sloppy, `--model claude-sonnet-5`. Verified model IDs as of
+2026-09-11: `claude-haiku-4-5-20251001`, `claude-sonnet-5`, `claude-sonnet-4-6`.
+
+A label the model invents that is not in the list is forced to `other`, and a
+reply with no JSON in it is recorded as a failure rather than guessed at — a
+wrong label is worse than a missing one.
+
 ## Known limits (honest list)
 
 - **Sync offsets are computed but NOT yet applied to the FCPXML.** `build`
@@ -56,4 +78,10 @@ in time cannot sync, and a wrong offset is worse than none.
   was not compiled with (`brew install ffmpeg --with-libvidstab`, or use
   OpenCV optical flow).
 - **No "sort by moment".** That is Phase 3 — sampled stills to a vision model.
+- **`label` has never made a successful live call.** The Anthropic key in
+  `.env.local` returns "credit balance is too low", so real-world labelling
+  accuracy is completely unverified. Everything around the call is tested
+  (still extraction, parsing, bad-reply handling, keywords reaching Final Cut)
+  — but whether it actually recognises a first dance is unknown until the
+  account has credit.
 - **Only tested on synthetic fixtures**, not a real wedding card yet.

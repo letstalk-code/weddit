@@ -269,8 +269,27 @@ Generated a real export for "Katelin and Bryce" and validated it:
           build lays a stringout; real <mc-clip> multicam angles are next
         * no shake detection (this ffmpeg build lacks vidstabdetect)
         * never run on a real wedding card, only synthetic fixtures
-- [ ] **Phase 3 — semantic clip sorting (the hard half).** Only after Phase 2
-      proves out. Vision model over sampled frames -> wedding moment labels.
+- [x] **Phase 3 — semantic clip sorting — CODE DONE 2026-09-11, UNPROVEN.**
+      `label` subcommand: 3 downscaled stills per usable clip -> model -> one of
+      17 wedding moments -> plan + FCPXML keyword. Rejected takes are never
+      sent, so Phase 2 pays for itself in API cost. `--dry-run` reports exactly
+      what would leave the machine (6 stills = 94 KB on the fixtures).
+      Verified: still extraction, dry-run accounting, response parsing across 5
+      shapes, invented labels coerced to "other", non-JSON replies raise rather
+      than mislabel, keywords round-trip through Final Cut's parser.
+      NOT VERIFIED: a single live call. The key has no credit (see below), so
+      actual labelling accuracy is unknown.
+      Model IDs existence-checked against /v1/models (works without credit):
+      claude-haiku-4-5-20251001 (default), claude-sonnet-5, claude-sonnet-4-6.
+
+## !! BILLING BLOCKER found 2026-09-11
+The ANTHROPIC_API_KEY in `.env.local` returns HTTP 400 "Your credit balance is
+too low to access the Anthropic API" for every model. Two consequences:
+  1. `prep label` cannot run until the account is topped up.
+  2. If Vercel holds the SAME key, the deployed app's "Generate Story" button
+     is broken in production right now — it calls the same API. I could not
+     read Vercel's value to confirm (it is a sensitive env var), so this is
+     unconfirmed but likely. Worth testing Generate Story on the live site.
 - [ ] **Phase 4 — bridge.** Land Weddit's story beats as markers on the synced
       multicam timeline from Phase 2.
 
